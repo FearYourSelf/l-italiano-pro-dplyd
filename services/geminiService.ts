@@ -60,6 +60,10 @@ export class GeminiService {
         break;
     }
 
+    const accentInstruction = `ACCENT INTENSITY: ${profile.accentIntensity}/100. 
+      (If 0: speak standard English when translating or explaining. If 100: use an extremely heavy, thick, stereotypical regional accent even in English). 
+      Scale your grammar and phonetic descriptions accordingly.`;
+
     const modeInstruction = profile.mode === AIMode.LEARNING 
       ? `MODE: STUDIO (Learning). 
          - Provide helpful corrections if the user makes mistakes.
@@ -81,6 +85,7 @@ export class GeminiService {
       USER: ${profile.name}.
       PERSONALITY: ${behaviorInstruction}
       ${regionalNuance}
+      ${accentInstruction}
       ${modeInstruction}
 
       FORMATTING:
@@ -93,7 +98,7 @@ export class GeminiService {
       LOGGING:
       - Store facts using: [[MEMORY: key=value]].
 
-      LANGUAGE NOTE: When communicating in English, use standard, natural English. Do not attempt to write with a phonetic Italian accent.
+      LANGUAGE NOTE: When communicating in English, adjust your written "accent" to match INTENSITY ${profile.accentIntensity}. If intensity is high, use phonetic spellings or regional interjections.
     `;
   }
 

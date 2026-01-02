@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { AppView, Message, ChatTab, UserProfile, MemoryItem, AIMode, AIBehaviorType, StudyPlanData } from './types';
 import { gemini } from './services/geminiService';
@@ -98,7 +99,6 @@ const App: React.FC = () => {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (!parsed.behaviorType) parsed.behaviorType = AIBehaviorType.FRIENDLY;
-      if (parsed.behavior && !parsed.customBehavior) parsed.customBehavior = parsed.behavior;
       if (parsed.accentIntensity === undefined) parsed.accentIntensity = 50;
       return parsed;
     }
@@ -253,13 +253,11 @@ const App: React.FC = () => {
     <div className="flex h-screen bg-[#050505] text-white overflow-hidden relative">
       <div className="absolute top-0 left-0 w-full h-[3px] z-50 italian-accent"></div>
 
-      {/* Sidebar Overlay for Mobile */}
       <div className={`
         fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden
         ${isSidebarOpen ? 'block' : 'hidden'}
       `} onClick={() => setIsSidebarOpen(false)}></div>
 
-      {/* Sidebar Container */}
       <div className={`
         fixed inset-y-0 left-0 z-50 lg:z-30 bg-[#0d0d0d] flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -351,16 +349,13 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <main className={`flex-1 flex flex-col relative overflow-hidden bg-[#050505] transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
-        {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between p-4 bg-[#0a0a0a] border-b border-white/5 shrink-0">
           <button onClick={() => setIsSidebarOpen(true)} className="p-1"><LayoutGrid size={24} /></button>
           <span className="font-montserrat text-sm tracking-widest">L'ITALIANO PRO</span>
           <button onClick={() => setActiveView(AppView.SETTINGS)} className="p-1"><UserIcon size={24} /></button>
         </div>
 
-        {/* View Container */}
         <div className="flex-1 relative overflow-hidden">
           {activeView === AppView.CHAT && (
             <ChatRoom 
@@ -400,7 +395,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Bottom Navigation */}
         <nav className="flex items-center justify-around py-3 bg-[#0d0d0d] border-t border-white/5 shrink-0 z-10">
           <NavButton 
             active={activeView === AppView.CHAT} 
@@ -565,6 +559,42 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       </section>
 
+      {/* Added Accent Intensity Slider to Settings Panel */}
+      <section className="space-y-6">
+        <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
+          <Languages size={20} className="text-blue-500" /> Accent Configuration
+        </h3>
+        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-white mb-1">Accent Intensity</p>
+              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Italian inflection in English</p>
+            </div>
+            <span className="text-lg font-black text-blue-500 bg-blue-500/10 px-4 py-1.5 rounded-xl border border-blue-500/20">
+              {profile.accentIntensity}%
+            </span>
+          </div>
+          
+          <input 
+            type="range" min="0" max="100" 
+            value={profile.accentIntensity}
+            onChange={(e) => onUpdate({ ...profile, accentIntensity: parseInt(e.target.value) })}
+            className="w-full accent-blue-500 bg-white/10 h-2 rounded-full cursor-pointer"
+          />
+          
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1">
+              <p className="text-[9px] font-black text-gray-600 uppercase mb-1">0% - Standard</p>
+              <p className="text-[10px] text-gray-500 leading-tight">Clear English pronunciation for translations.</p>
+            </div>
+            <div className="flex-1 text-right">
+              <p className="text-[9px] font-black text-gray-600 uppercase mb-1">100% - Dialect-Heavy</p>
+              <p className="text-[10px] text-gray-500 leading-tight">Authentic regional phonetic inflections.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="space-y-6">
         <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
           <Mic size={20} className="text-green-500" /> Voices & Regional Accents
@@ -585,7 +615,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     </span>
                   </div>
                   {profile.voiceId === data.api && (
-                    <div className="bg-green-500 text-[9px] px-2 py-0.5 rounded-full font-black text-white uppercase animate-pulse">
+                    <div className="bg-green-500 text-[9px] px-2 py-0.5 rounded-full font-black text-white uppercase">
                       Native Selected
                     </div>
                   )}
@@ -604,12 +634,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <p className="text-[11px] text-gray-400 leading-tight">
                     <span className="text-gray-300 font-bold uppercase text-[9px]">Traits:</span> {data.characteristics}
                   </p>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <Quote size={10} className="text-green-500/40 shrink-0" />
-                    <p className="text-[10px] text-green-500/80 font-mono italic">
-                      {data.phrases}
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
