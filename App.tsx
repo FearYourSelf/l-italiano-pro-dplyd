@@ -6,6 +6,7 @@ import ChatRoom from './components/ChatRoom';
 import VoiceMode from './components/VoiceMode';
 import Scanner from './components/Scanner';
 import StudyPlan from './components/StudyPlan';
+import Walkthrough from './components/Walkthrough';
 import { 
   MessageSquare, 
   Mic, 
@@ -24,6 +25,8 @@ import {
   Brain,
   Info,
   ChevronLeft,
+  // Added missing ChevronRight import
+  ChevronRight,
   MapPin,
   PanelLeftClose,
   PanelLeft,
@@ -38,7 +41,8 @@ import {
   History,
   Pencil,
   Volume2,
-  Crown
+  Crown,
+  HelpCircle
 } from 'lucide-react';
 
 const INITIAL_PROFILE: UserProfile = {
@@ -73,6 +77,12 @@ const App: React.FC = () => {
   const [useThinking, setUseThinking] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Tutorial State
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return localStorage.getItem('italiano_tutorial_completed') !== 'true';
+  });
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
     localStorage.setItem('italiano_tabs', JSON.stringify(tabs));
@@ -117,9 +127,31 @@ const App: React.FC = () => {
     setTabs([...tabs, newTab]); setActiveTabId(newTab.id); setIsSidebarOpen(false); setActiveView(AppView.CHAT);
   };
 
+  const closeTutorial = () => {
+    setShowTutorial(false);
+    localStorage.setItem('italiano_tutorial_completed', 'true');
+    setActiveView(AppView.CHAT);
+    setTutorialStep(0);
+  };
+
+  const startTutorial = () => {
+    setTutorialStep(0);
+    setActiveView(AppView.CHAT);
+    setShowTutorial(true);
+  };
+
   return (
     <div className="flex h-screen bg-[#050505] text-white overflow-hidden relative font-inter">
       <div className="absolute top-0 left-0 w-full h-[3px] z-50 italian-accent opacity-60"></div>
+
+      {showTutorial && (
+        <Walkthrough 
+          currentStep={tutorialStep}
+          onStepChange={setTutorialStep}
+          onClose={closeTutorial} 
+          onViewChange={setActiveView} 
+        />
+      )}
 
       {/* Dynamic Navigation Drawer */}
       <div className={`fixed inset-y-0 left-0 z-[60] lg:z-30 bg-[#0d0d0d] border-r border-white/5 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-72'} w-72`}>
@@ -149,7 +181,7 @@ const App: React.FC = () => {
             ))}
           </div>
 
-          <div className="mt-auto pt-6 border-t border-white/5">
+          <div className="mt-auto pt-6 border-t border-white/5 space-y-2">
             <div onClick={() => { setActiveView(AppView.SETTINGS); setIsSidebarOpen(false); }} className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all hover:bg-white/5 ${activeView === AppView.SETTINGS ? 'bg-white/10 border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.03)]' : ''}`}>
               <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
                 <UserIcon size={20} />
@@ -173,7 +205,7 @@ const App: React.FC = () => {
           {activeView === AppView.VOICE && <VoiceMode onClose={() => setActiveView(AppView.CHAT)} profile={profile} onModeToggle={(mode) => setProfile({...profile, mode})} onUpdateProfile={setProfile} />}
           {activeView === AppView.SCAN && <Scanner profile={profile} />}
           {activeView === AppView.STUDY_PLAN && <StudyPlan profile={profile} studyPlan={studyPlan} onRefresh={async () => { const p = await gemini.generateStudyPlan(profile, memories); setStudyPlan(p); }} onUpdateProfile={setProfile} />}
-          {activeView === AppView.SETTINGS && <SettingsPanel profile={profile} memories={memories} onUpdate={setProfile} onUpdateMemories={setMemories} archivedTabs={archivedTabs} onUnarchive={(id) => setTabs(t => t.map(x => x.id === id ? {...x, archived: false} : x))} onDelete={(id) => setTabs(t => t.filter(x => x.id !== id))} />}
+          {activeView === AppView.SETTINGS && <SettingsPanel profile={profile} memories={memories} onUpdate={setProfile} onUpdateMemories={setMemories} archivedTabs={archivedTabs} onUnarchive={(id) => setTabs(t => t.map(x => x.id === id ? {...x, archived: false} : x))} onDelete={(id) => setTabs(t => t.filter(x => x.id !== id))} onStartTutorial={startTutorial} />}
         </div>
 
         {/* Dynamic Tab Bar */}
@@ -196,7 +228,7 @@ const NavButton = ({ active, onClick, icon, label }: { active: boolean, onClick:
   </button>
 );
 
-const SettingsPanel = ({ profile, memories, onUpdate, onUpdateMemories, archivedTabs, onUnarchive, onDelete }: any) => {
+const SettingsPanel = ({ profile, memories, onUpdate, onUpdateMemories, archivedTabs, onUnarchive, onDelete, onStartTutorial }: any) => {
   const slangItems = memories.filter((m: any) => 
     m.key.toLowerCase().includes('slang') || 
     m.key.toLowerCase().includes('idiom') || 
@@ -228,6 +260,28 @@ const SettingsPanel = ({ profile, memories, onUpdate, onUpdateMemories, archived
           </div>
         </div>
       </div>
+
+      {/* Tutorial Trigger Section */}
+      <section className="space-y-4">
+         <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-500 mb-2 pl-2">
+          <HelpCircle size={16} className="text-amber-500" /> Supporto
+        </div>
+        <button 
+          onClick={onStartTutorial}
+          className="w-full flex items-center justify-between p-6 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] group hover:bg-amber-500/20 transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+              <Sparkles size={24} />
+            </div>
+            <div className="text-left">
+               <p className="text-sm font-bold text-white">Tour Guidato</p>
+               <p className="text-[10px] text-amber-500/60 font-black uppercase tracking-widest">Rivedi le funzioni dell'app</p>
+            </div>
+          </div>
+          <ChevronRight className="text-amber-500 group-hover:translate-x-1 transition-transform" />
+        </button>
+      </section>
 
       {/* Editable Profile Section */}
       <section className="space-y-4">

@@ -123,9 +123,9 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
       {/* Dynamic Background Glow */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
       
-      {/* Top Bar - More compact */}
+      {/* Top Bar */}
       {!isLive && (
-        <div className="px-6 pt-8 pb-4 flex items-center justify-between shrink-0 relative z-50">
+        <div className="px-6 pt-6 pb-2 flex items-center justify-between shrink-0 relative z-50">
           <div>
             <h2 className="text-xl font-montserrat flex items-center gap-2">
               <ScanLine className="text-green-500" size={20} /> Punta e Impara
@@ -139,7 +139,7 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 relative flex flex-col items-center justify-center overflow-hidden px-6 pb-4">
+      <div className="flex-1 min-h-0 relative flex flex-col items-center justify-center overflow-hidden px-6 pb-4">
         {isLive ? (
           <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-300">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
@@ -176,49 +176,49 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
             <button onClick={reset} className="absolute top-4 left-4 p-2.5 rounded-xl bg-black/40 backdrop-blur-md text-white border border-white/10"><ChevronLeft size={20} /></button>
           </div>
         ) : (
-          <div className="w-full max-w-sm flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Optimized Scan Area */}
+          <div className="w-full max-w-sm flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Interactive Scan Area */}
             <div 
               onClick={startCamera}
-              className="aspect-[4/5] w-full rounded-[3rem] bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-5 cursor-pointer hover:bg-white/10 transition-all group relative overflow-hidden shadow-2xl"
+              className="aspect-square sm:aspect-[4/5] w-full rounded-[3rem] bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/10 transition-all group relative overflow-hidden shadow-2xl"
             >
               <div className="absolute inset-0 bg-gradient-to-tr from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="w-20 h-20 rounded-[2rem] bg-green-500/10 flex items-center justify-center border border-green-500/20 group-hover:scale-105 transition-all">
-                <Camera size={36} className="text-green-500" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.8rem] bg-green-500/10 flex items-center justify-center border border-green-500/20 group-hover:scale-105 transition-all">
+                <Camera size={32} className="text-green-500" />
               </div>
               <div className="text-center px-6 relative z-10">
-                <h3 className="text-lg font-montserrat mb-1">Avvia Scanner</h3>
-                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest leading-snug">
+                <h3 className="text-base sm:text-lg font-montserrat mb-0.5">Avvia Scanner</h3>
+                <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase font-black tracking-widest leading-snug">
                   Traduzioni e contesto<br/>in tempo reale
                 </p>
               </div>
-              <div className="absolute bottom-8 w-24 h-1 bg-white/5 rounded-full overflow-hidden">
+              <div className="absolute bottom-6 w-20 h-1 bg-white/5 rounded-full overflow-hidden">
                 <div className="h-full bg-green-500/30 w-1/3 animate-ping-horizontal"></div>
               </div>
             </div>
 
-            {/* Feature Grid - More compact */}
+            {/* Feature Grid */}
             <div className="grid grid-cols-2 gap-3">
-               <div className="p-4 rounded-[1.8rem] bg-white/5 border border-white/10 flex items-center justify-center gap-3">
-                  <Languages size={14} className="text-blue-400" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Traduzione</span>
+               <div className="p-3.5 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center gap-2">
+                  <Languages size={12} className="text-blue-400" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Traduzione</span>
                </div>
-               <div className="p-4 rounded-[1.8rem] bg-white/5 border border-white/10 flex items-center justify-center gap-3">
-                  <Globe size={14} className="text-amber-400" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Cultura</span>
+               <div className="p-3.5 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center gap-2">
+                  <Globe size={12} className="text-amber-400" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Cultura</span>
                </div>
             </div>
 
             {/* Compact Upload */}
-            <label className="w-full flex items-center justify-center gap-2 py-4 rounded-[1.8rem] bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all group">
-              <Upload size={14} className="text-gray-500 group-hover:text-white" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-white">Galleria</span>
+            <label className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all group">
+              <Upload size={12} className="text-gray-500 group-hover:text-white" />
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-white">Galleria</span>
               <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
             </label>
           </div>
         )}
 
-        {/* Improved Results Dashboard */}
+        {/* Results Dashboard */}
         {result && (
           <div className="absolute inset-x-0 bottom-0 z-50 p-4 pt-8 bg-gradient-to-t from-black via-black/98 to-transparent h-[60%] flex flex-col animate-in slide-in-from-bottom-full duration-400">
             <div className="w-full max-w-lg mx-auto flex flex-col h-full gap-4">
