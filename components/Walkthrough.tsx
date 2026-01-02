@@ -11,7 +11,12 @@ import {
   BookOpen, 
   Settings,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Waves,
+  Languages,
+  GripHorizontal,
+  Tent,
+  PencilLine
 } from 'lucide-react';
 import { AppView } from '../types';
 
@@ -37,20 +42,38 @@ const STEPS: Step[] = [
     icon: <Sparkles className="text-green-500" size={32} />
   },
   {
-    title: "Smart Chat",
-    description: "Converse naturally here. Activate 'Thinking Mode' for deep explanations or let the Tutor correct your mistakes in real-time.",
+    title: "Real-Life Scenarios",
+    description: "Tap the Tent icon to start 'Missioni'. Practice ordering at a Milanese cafe or asking for directions in Venice.",
     view: AppView.CHAT,
-    icon: <MessageSquare className="text-blue-500" size={32} />
+    icon: <Tent className="text-amber-500" size={32} />
   },
   {
-    title: "Real Conversations",
-    description: "Choose a regional coach and speak aloud. Learn dialects and typical expressions from Rome, Milan, Naples, and other cities.",
+    title: "Regional Secrets",
+    description: "Curious about local slang? Use the Zap tool to unlock witty regional secrets and cultural 'gemme' in an instant.",
+    view: AppView.CHAT,
+    icon: <Zap className="text-amber-400" size={32} />
+  },
+  {
+    title: "Personal Study Notes",
+    description: "Keep track of goals. The AI reads your 'Appunti' to incorporate specific verbs or topics into your sessions.",
+    view: AppView.CHAT,
+    icon: <PencilLine className="text-indigo-400" size={32} />
+  },
+  {
+    title: "Voice & Dialects",
+    description: "Speak with regional coaches. Use the slider to control 'Dialect Intensity'—from clear English to thick regional accents.",
     view: AppView.VOICE,
-    icon: <Mic className="text-red-500" size={32} />
+    icon: <Waves className="text-indigo-400" size={32} />
+  },
+  {
+    title: "Draggable Transcripts",
+    description: "Follow speech with live subtitles. The window is draggable and toggleable, letting you stay immersed while you practice.",
+    view: AppView.VOICE,
+    icon: <GripHorizontal className="text-green-400" size={32} />
   },
   {
     title: "Point and Learn",
-    description: "Use your camera to translate menus, signs, or identify objects. You'll also receive cultural facts about what you see.",
+    description: "Use your camera to translate signs or identify objects. You'll also receive cultural facts about what you see.",
     view: AppView.SCAN,
     icon: <Scan className="text-green-500" size={32} />
   },
@@ -62,7 +85,7 @@ const STEPS: Step[] = [
   },
   {
     title: "Profile and Memory",
-    description: "Customize your identity and manage what the AI remembers about you in your personal 'Slang Vault'.",
+    description: "Manage your identity and what the AI remembers about you in your personal 'Slang Vault'.",
     view: AppView.SETTINGS,
     icon: <Settings className="text-gray-400" size={32} />
   }
@@ -91,7 +114,7 @@ const Walkthrough: React.FC<WalkthroughProps> = ({ onClose, onViewChange, curren
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="w-full max-w-md glass-dark rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 duration-500">
+      <div className="w-full max-w-md bg-[#0d0d0d]/90 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 duration-500">
         
         {/* Step Content */}
         <div className="p-8 sm:p-10 flex flex-col items-center text-center">

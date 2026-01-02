@@ -19,11 +19,20 @@ export enum AIBehaviorType {
   CUSTOM = 'CUSTOM'
 }
 
+export interface Scenario {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  goal: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'ai';
   content: string;
   timestamp: number;
+  translation?: string; // For real-time subtitles
 }
 
 export interface ChatTab {
@@ -43,6 +52,7 @@ export interface UserProfile {
   mode: AIMode;
   goal?: string;
   accentIntensity: number; // 0 (Standard) to 100 (Deep Dialect)
+  activeScenario?: Scenario | null;
 }
 
 export interface MemoryItem {
@@ -50,6 +60,13 @@ export interface MemoryItem {
   value: string;
   importance: number;
   context?: string;
+}
+
+export interface NoteItem {
+  id: string;
+  content: string;
+  timestamp: number;
+  color?: string;
 }
 
 export interface StudyModule {

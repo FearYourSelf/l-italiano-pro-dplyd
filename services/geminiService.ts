@@ -1,18 +1,14 @@
 
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
-import { UserProfile, MemoryItem, AIMode, AIBehaviorType, ChatTab, StudyPlanData, StudyModule } from "../types";
+import { UserProfile, MemoryItem, NoteItem, AIMode, AIBehaviorType, ChatTab, StudyPlanData, StudyModule } from "../types";
 
 export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    // Correctly initialize GoogleGenAI with a named parameter using process.env.API_KEY directly
     this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
-  /**
-   * Helper to execute API calls with exponential backoff for 429 errors.
-   */
   private async withRetry<T>(fn: () => Promise<T>, maxRetries: number = 3): Promise<T> {
     let delay = 1000;
     for (let i = 0; i < maxRetries; i++) {
@@ -21,9 +17,8 @@ export class GeminiService {
       } catch (error: any) {
         const isQuotaError = error?.message?.includes("429") || error?.status === "RESOURCE_EXHAUSTED";
         if (isQuotaError && i < maxRetries - 1) {
-          console.warn(`Quota exceeded. Retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2; // Exponential backoff
+          delay *= 2;
           continue;
         }
         throw error;
@@ -32,170 +27,154 @@ export class GeminiService {
     throw new Error("Maximum retries reached.");
   }
 
-  private getSystemPrompt(profile: UserProfile, memories: MemoryItem[], otherTabs: ChatTab[]) {
+  private getSystemPrompt(profile: UserProfile, memories: MemoryItem[], notes: NoteItem[] = []) {
     const memoryContext = memories.map(m => `- ${m.key}: ${m.value}`).join("\n");
+    const notesContext = notes.map(n => `- ${n.content}`).join("\n");
     
     const regionalNuance = {
-      'Zephyr': "Regional Identity: ROMAN (Giulia). Witty, slightly cheeky. Use 'daje', 'mo'.",
-      'Puck': "Regional Identity: MILANESE (Alessandro). Fast, rhythmic. Use 'uè', 'taaac'.",
-      'Charon': "Regional Identity: SICILIAN (Giuseppe). Melodic, deep. Use 'bedda', 'amunì'.",
-      'Kore': "Regional Identity: NAPOLETAN (Alessandra). Musical, solar. Use 'Marò!', 'azz!'.",
-      'Fenrir': "Regional Identity: TUSCAN (Luca). Elegant, precise. Use aspirated 'c'."
+      'Zephyr': "Identity: GIULIA (Roman). Use 'daje', 'mo'. Cheeky, warm, and very expressive.",
+      'Puck': "Identity: ALESSANDRO (Milanese). Fast, business-oriented, efficient. Use 'taaac'.",
+      'Charon': "Identity: GIUSEPPE (Sicilian). Proud, melodic, hospitable. Use 'amunì'.",
+      'Kore': "Identity: ALESSANDRA (Neapolitan). Energetic, musical, passionate. Use 'Marò!'.",
+      'Fenrir': "Identity: LUCA (Tuscan). Precise, intellectual, slightly sarcastic. Use 'hoha hola' style."
     }[profile.voiceId] || "";
 
-    let behaviorInstruction = "";
-    switch (profile.behaviorType) {
-      case AIBehaviorType.STRICT:
-        behaviorInstruction = "Strict Professor. High standards, formal 'Lei'.";
-        break;
-      case AIBehaviorType.FRIENDLY:
-        behaviorInstruction = "Encouraging Tutor. Warm and supportive.";
-        break;
-      case AIBehaviorType.CASUAL:
-        behaviorInstruction = "Cool Friend. Uses lots of slang and natural flow.";
-        break;
-      case AIBehaviorType.CUSTOM:
-        behaviorInstruction = `Custom Persona: ${profile.customBehavior}`;
-        break;
-    }
-
-    const accentInstruction = `ACCENT INTENSITY: ${profile.accentIntensity}/100. 
-      (If 0: speak standard English when translating or explaining. If 100: use an extremely heavy, thick, stereotypical regional accent even in English). 
-      Scale your grammar and phonetic descriptions accordingly.`;
+    const scenarioInstruction = profile.activeScenario 
+      ? `ACTIVE ROLEPLAY: ${profile.activeScenario.title}. 
+         Scenario context: ${profile.activeScenario.description}. 
+         User Goal: ${profile.activeScenario.goal}. 
+         Don't break character. React to the user's attempts to reach the goal.` 
+      : "";
 
     const modeInstruction = profile.mode === AIMode.LEARNING 
-      ? `MODE: STUDIO (Learning). 
-         - Provide helpful corrections if the user makes mistakes.
-         - Use Lesson Cards for new vocabulary.
-         
-         LESSON CARD FORMAT:
-         🏷️ **Parola/Frase**: [Italian Word]
-         📖 **Significato**: *[English Translation]*
-         💡 **Uso & Sfumature**: [One quick tip]
-         📝 **Esempio**: **[Full Italian Sentence]**
-         *[English translation of example sentence]*
-         ---`
-      : `MODE: CONVERSAZIONE (Chat).
-         - Keep responses very short (1-3 sentences).
-         - Focus on natural, colloquial Italian dialogue.`;
+      ? `MODE: LEARNING. If the user makes a mistake in Italian, provide a correction block.
+         Format corrections as: 💡 **Correzione**: [Italian] (*[English]*)`
+      : `MODE: CONVERSATIONAL. Keep it natural, idiomatic, and snappy.`;
 
     return `
-      You are "L'Italiano Pro", an expert native Italian coach. 
+      You are "L'Italiano Pro", an expert native Italian coach.
       USER: ${profile.name}.
-      PERSONALITY: ${behaviorInstruction}
-      ${regionalNuance}
-      ${accentInstruction}
+      REGIONAL VIBE: ${regionalNuance} (Accent Intensity: ${profile.accentIntensity}/100)
+      ${scenarioInstruction}
       ${modeInstruction}
 
-      FORMATTING:
-      - Bold important Italian words: **parola**
-      - Italicize translations: *translation*
+      LANGUAGE ADAPTABILITY:
+      - If the user speaks to you in English, respond in English while maintaining your Italian personality (accent/flair). Use this opportunity to teach a few Italian words or phrases.
+      - If the user speaks to you in Italian, respond in Italian.
+      - Always be encouraging.
 
-      MEMORY BANK:
+      USER PERSONAL NOTES (PRIORITY STUDY GOALS):
+      ${notesContext || "No specific study notes yet."}
+      PROACTIVE BEHAVIOR: Occasionally reference these notes. If a user wrote a note about a verb or phrase, try to use it in conversation or ask the user to use it.
+
+      MEMORY (AI-EXTRACTED FACTS):
       ${memoryContext}
 
-      LOGGING:
-      - Store facts using: [[MEMORY: key=value]].
-
-      LANGUAGE NOTE: When communicating in English, adjust your written "accent" to match INTENSITY ${profile.accentIntensity}. If intensity is high, use phonetic spellings or regional interjections.
+      CRITICAL: Always log new user facts with [[MEMORY: key=value]].
     `;
   }
 
-  async chat(
+  async *chatStream(
     message: string, 
     history: any[], 
     profile: UserProfile, 
     memories: MemoryItem[],
-    activeTabId: string,
-    allTabs: ChatTab[],
+    notes: NoteItem[] = [],
     useThinking: boolean = false
-  ): Promise<string> {
-    return this.withRetry(async () => {
-      const model = useThinking ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
-      const config: any = {
-        systemInstruction: this.getSystemPrompt(profile, memories, allTabs),
-      };
+  ) {
+    const model = useThinking ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
+    const config = {
+      systemInstruction: this.getSystemPrompt(profile, memories, notes),
+    };
 
-      const response = await this.ai.models.generateContent({
-        model,
-        contents: [...history, { role: 'user', parts: [{ text: message }] }],
-        config
-      });
-
-      // Use .text property directly
-      return response.text || "Ops, qualcosa è andato storto. Riprova?";
+    const response = await this.ai.models.generateContentStream({
+      model,
+      contents: [...history, { role: 'user', parts: [{ text: message }] }],
+      config
     });
+
+    for await (const chunk of response) {
+      const text = chunk.text;
+      if (text) yield text;
+    }
+  }
+
+  async chat(message: string, history: any[], profile: UserProfile, memories: MemoryItem[], notes: NoteItem[] = [], useThinking: boolean = false): Promise<string> {
+    const it = this.chatStream(message, history, profile, memories, notes, useThinking);
+    let full = "";
+    for await (const chunk of it) full += chunk;
+    return full;
+  }
+
+  async translateLine(text: string): Promise<string> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [{ parts: [{ text: `Translate this Italian phrase to English concisely: "${text}"` }] }],
+      });
+      return response.text?.trim() || "";
+    } catch (e) { return ""; }
   }
 
   async quickCheck(text: string): Promise<string | null> {
     if (!text || text.trim().length < 5) return null;
-    
-    try {
-      return await this.withRetry(async () => {
-        const response = await this.ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: [{ parts: [{ text: `Validate Italian. Return ONLY the correction or "OK" if perfect. Input: "${text}"` }] }],
-        });
-
-        // Use .text property directly
-        const result = response.text?.trim() || "";
-        if (result.toUpperCase() === "OK" || result === text.trim()) return null;
-        return result;
-      }, 1);
-    } catch (e) {
-      return null;
-    }
+    return this.withRetry(async () => {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [{ parts: [{ text: `Check Italian grammar. If bad, return the fixed version. If OK, return "OK". Input: "${text}"` }] }],
+      });
+      const result = response.text?.trim() || "";
+      return (result.toUpperCase() === "OK" || result === text.trim()) ? null : result;
+    }, 1);
   }
 
   async generateStudyPlan(profile: UserProfile, memories: MemoryItem[]): Promise<StudyPlanData> {
-    return this.withRetry(async () => {
-      const memoryContext = memories.map(m => `${m.key}: ${m.value}`).join(", ");
-      const prompt = `Create a 5-module Italian roadmap for ${profile.name} (${profile.occupation}). Goal: ${profile.goal}. Known facts: ${memoryContext}.`;
+    const memoryContext = memories.map(m => `${m.key}: ${m.value}`).join(", ");
+    const prompt = `Create a 5-module Italian roadmap for ${profile.name}. Goal: ${profile.goal}. Knowledge: ${memoryContext}.`;
 
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              goal: { type: Type.STRING },
-              modules: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.STRING },
-                    title: { type: Type.STRING },
-                    topics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    progress: { type: Type.INTEGER },
-                    status: { type: Type.STRING, enum: ['completed', 'active', 'locked'] },
-                    difficulty: { type: Type.STRING }
-                  },
-                  required: ["id", "title", "topics", "progress", "status", "difficulty"]
-                }
-              },
-              coachFeedback: { type: Type.STRING },
-              overallProgress: { type: Type.INTEGER }
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            goal: { type: Type.STRING },
+            modules: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  title: { type: Type.STRING },
+                  topics: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  progress: { type: Type.INTEGER },
+                  status: { type: Type.STRING, enum: ['completed', 'active', 'locked'] },
+                  difficulty: { type: Type.STRING }
+                },
+                required: ["id", "title", "topics", "progress", "status", "difficulty"]
+              }
             },
-            required: ["goal", "modules", "coachFeedback", "overallProgress"]
-          }
+            coachFeedback: { type: Type.STRING },
+            overallProgress: { type: Type.INTEGER }
+          },
+          required: ["goal", "modules", "coachFeedback", "overallProgress"]
         }
-      });
-
-      // Use .text property directly
-      const data = JSON.parse(response.text || "{}");
-      return { ...data, lastUpdated: Date.now() };
+      }
     });
+    return { ...JSON.parse(response.text || "{}"), lastUpdated: Date.now() };
   }
 
   async generateReview(module: StudyModule): Promise<{ summary: string, quiz: string }> {
     return this.withRetry(async () => {
-      const prompt = `Review module: "${module.title}". Topics: ${module.topics.join(", ")}. Provide a summary and a challenging question.`;
       const response = await this.ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ 
+          parts: [{ 
+            text: `Generate a short review summary and a one-question quiz for the Italian module: "${module.title}". Topics covered: ${module.topics.join(', ')}.` 
+          }] 
+        }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -208,44 +187,34 @@ export class GeminiService {
           }
         }
       });
-      // Use .text property directly
-      return JSON.parse(response.text || "{}");
+      return JSON.parse(response.text || '{"summary": "Unable to generate summary.", "quiz": "Unable to generate quiz."}');
     });
   }
 
   async generateSpeech(text: string, voiceName: string): Promise<string> {
-    return this.withRetry(async () => {
-      const response = await this.ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName },
-            },
-          },
-        },
-      });
-      return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || "";
+    const response = await this.ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
+      },
     });
+    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || "";
   }
 
   async analyzeMedia(file: File, prompt: string, profile: UserProfile): Promise<string> {
-    return this.withRetry(async () => {
-      const base64Data = await this.toBase64(file);
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: {
-          parts: [
-            { inlineData: { data: base64Data, mimeType: file.type } },
-            { text: `${prompt}. Focus on translating text and explaining cultural context. Answer in ${profile.language}.` }
-          ]
-        }
-      });
-      // Use .text property directly
-      return response.text || "Non sono riuscito ad analizzare il file.";
+    const base64Data = await this.toBase64(file);
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: {
+        parts: [
+          { inlineData: { data: base64Data, mimeType: file.type } },
+          { text: `${prompt}. Focus on translating and context. Answer in ${profile.language}.` }
+        ]
+      }
     });
+    return response.text || "Errore analisi.";
   }
 
   private toBase64(file: File): Promise<string> {
@@ -253,63 +222,40 @@ export class GeminiService {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = error => reject(error);
+      reader.onerror = reject;
     });
   }
 
   encode(bytes: Uint8Array): string {
     let binary = '';
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     return btoa(binary);
   }
 
   decode(base64: string): Uint8Array {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
+    const bin = atob(base64);
+    const res = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
+    return res;
   }
 
-  async decodeAudioData(
-    data: Uint8Array,
-    ctx: AudioContext,
-    sampleRate: number = 24000,
-    numChannels: number = 1
-  ): Promise<AudioBuffer> {
-    const dataInt16 = new Int16Array(data.buffer);
-    const frameCount = dataInt16.length / numChannels;
-    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-    for (let channel = 0; channel < numChannels; channel++) {
-      const channelData = buffer.getChannelData(channel);
-      for (let i = 0; i < frameCount; i++) {
-        channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-      }
-    }
+  async decodeAudioData(data: Uint8Array, ctx: AudioContext, rate = 24000): Promise<AudioBuffer> {
+    const data16 = new Int16Array(data.buffer);
+    const buffer = ctx.createBuffer(1, data16.length, rate);
+    const channel = buffer.getChannelData(0);
+    for (let i = 0; i < data16.length; i++) channel[i] = data16[i] / 32768.0;
     return buffer;
   }
 
   async playRawPCM(base64: string) {
     if (!base64) return;
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    const data = this.decode(base64);
-    const buffer = await this.decodeAudioData(data, ctx, 24000, 1);
+    const ctx = new AudioContext({ sampleRate: 24000 });
+    const buffer = await this.decodeAudioData(this.decode(base64), ctx);
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
     source.start();
-    return new Promise((resolve) => {
-      source.onended = () => {
-        ctx.close();
-        resolve(true);
-      };
-    });
+    return new Promise(r => source.onended = () => { ctx.close(); r(true); });
   }
 }
 
