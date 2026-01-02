@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
 import { UserProfile, MemoryItem, AIMode, AIBehaviorType, ChatTab, StudyPlanData, StudyModule } from "../types";
 
@@ -36,11 +37,11 @@ export class GeminiService {
     const memoryContext = memories.map(m => `- ${m.key}: ${m.value}`).join("\n");
     
     const regionalNuance = {
-      'Zephyr': "Accent: ROMAN (Giulia). Witty, cheeky. Use 'daje', 'mo'. Heavy Roman-Italian accent in English.",
-      'Puck': "Accent: MILANESE (Alessandro). Fast, rhythmic. Use 'uè', 'taaac'. Rapid Milanese-Italian accent in English.",
-      'Charon': "Accent: SICILIAN (Giuseppe). Melodic, deep. Use 'bedda', 'amunì'. Deep, melodic Sicilian-Italian accent in English.",
-      'Kore': "Accent: NAPOLETAN (Alessandra). Musical, solar. Use 'Marò!', 'azz!'. Sing-song Neapolitan-Italian accent in English.",
-      'Fenrir': "Accent: TUSCAN (Luca). Elegant, precise. Use aspirated 'c'. Refined Tuscan-Italian accent in English."
+      'Zephyr': "Regional Identity: ROMAN (Giulia). Witty, slightly cheeky. Use 'daje', 'mo'.",
+      'Puck': "Regional Identity: MILANESE (Alessandro). Fast, rhythmic. Use 'uè', 'taaac'.",
+      'Charon': "Regional Identity: SICILIAN (Giuseppe). Melodic, deep. Use 'bedda', 'amunì'.",
+      'Kore': "Regional Identity: NAPOLETAN (Alessandra). Musical, solar. Use 'Marò!', 'azz!'.",
+      'Fenrir': "Regional Identity: TUSCAN (Luca). Elegant, precise. Use aspirated 'c'."
     }[profile.voiceId] || "";
 
     let behaviorInstruction = "";
@@ -52,18 +53,17 @@ export class GeminiService {
         behaviorInstruction = "Encouraging Tutor. Warm and supportive.";
         break;
       case AIBehaviorType.CASUAL:
-        behaviorInstruction = "Cool Friend. Uses lots of slang and Italglish.";
+        behaviorInstruction = "Cool Friend. Uses lots of slang and natural flow.";
         break;
       case AIBehaviorType.CUSTOM:
-        behaviorInstruction = `Custom: ${profile.customBehavior}`;
+        behaviorInstruction = `Custom Persona: ${profile.customBehavior}`;
         break;
     }
 
     const modeInstruction = profile.mode === AIMode.LEARNING 
       ? `MODE: STUDIO (Learning). 
-         - Create structured Lesson Cards for corrections or new terms.
-         - EACH FIELD MUST BE ON A NEW LINE.
-         - Use emojis as icons.
+         - Provide helpful corrections if the user makes mistakes.
+         - Use Lesson Cards for new vocabulary.
          
          LESSON CARD FORMAT:
          🏷️ **Parola/Frase**: [Italian Word]
@@ -73,26 +73,27 @@ export class GeminiService {
          *[English translation of example sentence]*
          ---`
       : `MODE: CONVERSAZIONE (Chat).
-         - Texting style. 
-         - EXTREMELY BRIEF (1-3 short sentences). 
-         - Use Italglish and natural flow.`;
+         - Keep responses very short (1-3 sentences).
+         - Focus on natural, colloquial Italian dialogue.`;
 
     return `
       You are "L'Italiano Pro", an expert native Italian coach. 
       USER: ${profile.name}.
-      REGIONAL IDENTITY: ${regionalNuance}
       PERSONALITY: ${behaviorInstruction}
+      ${regionalNuance}
       ${modeInstruction}
 
-      STRICT FORMATTING RULES:
-      1. Bold: **text**
-      2. Italics: *text*
-      3. Horizontal Line: ---
-      4. Store important user facts: [[MEMORY: key=value]].
-      Memory Context:
+      FORMATTING:
+      - Bold important Italian words: **parola**
+      - Italicize translations: *translation*
+
+      MEMORY BANK:
       ${memoryContext}
 
-      IMPORTANT: When you speak English, you MUST strictly maintain a heavy and distinctly Italian accent characteristic of your chosen region. Do not sound native in English. Maintain Italian rhythm and cadence at all times.
+      LOGGING:
+      - Store facts using: [[MEMORY: key=value]].
+
+      LANGUAGE NOTE: When communicating in English, use standard, natural English. Do not attempt to write with a phonetic Italian accent.
     `;
   }
 
@@ -122,7 +123,7 @@ export class GeminiService {
   }
 
   async quickCheck(text: string): Promise<string | null> {
-    if (!text || text.trim().length < 5) return null; // Increased min length to save quota
+    if (!text || text.trim().length < 5) return null;
     
     try {
       return await this.withRetry(async () => {
@@ -134,9 +135,9 @@ export class GeminiService {
         const result = response.text?.trim() || "";
         if (result.toUpperCase() === "OK" || result === text.trim()) return null;
         return result;
-      }, 1); // Only 1 retry for background checks to avoid piling up requests
+      }, 1);
     } catch (e) {
-      return null; // Fail silently for background checks
+      return null;
     }
   }
 
