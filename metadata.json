@@ -1,0 +1,8 @@
+{
+  "name": "L'Italiano Pro",
+  "description": "Native Italian learning with advanced memory, real-time voice conversations, and multimodal translation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
