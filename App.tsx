@@ -16,27 +16,29 @@ import {
   User as UserIcon,
   LayoutGrid,
   Trash2,
-  Save,
-  GraduationCap,
-  MessagesSquare,
   PlayCircle,
   Loader2,
   Archive,
-  RotateCcw,
   ArchiveRestore,
   Settings2,
-  Cpu,
   Brain,
-  Target,
   Info,
-  ChevronRight,
   ChevronLeft,
-  HelpCircle,
   MapPin,
-  Quote,
   PanelLeftClose,
   PanelLeft,
-  Columns
+  Languages,
+  Zap,
+  Award,
+  Sparkles,
+  UserCircle,
+  Briefcase,
+  Target,
+  Trophy,
+  History,
+  Pencil,
+  Volume2,
+  Crown
 } from 'lucide-react';
 
 const INITIAL_PROFILE: UserProfile = {
@@ -51,67 +53,22 @@ const INITIAL_PROFILE: UserProfile = {
   accentIntensity: 50
 };
 
-const VOICE_NAMES_MAPPING: Record<string, { api: string, region: string, characteristics: string, phrases: string }> = {
-  'Giulia': { 
-    api: 'Zephyr', 
-    region: 'Rome', 
-    characteristics: "Warm, witty, and slightly cynical. Uses double consonants ('a ccasa') and elides verb endings ('fà' for 'fare').",
-    phrases: "daje, mo, n'attimo, mejo"
-  },
-  'Alessandro': { 
-    api: 'Puck', 
-    region: 'Milan', 
-    characteristics: "Fast-paced, rhythmic, and professional. Features very closed 'e' sounds and a 'managerial' energetic cadence.",
-    phrases: "uè, taaac, figo, sbatti"
-  },
-  'Giuseppe': { 
-    api: 'Charon', 
-    region: 'Sicily', 
-    characteristics: "Deep, melodic, and expressive. Features retroflex 'll' and 'tr' sounds; 'o' often sounds like 'u'.",
-    phrases: "bedda, amunì, chi bbiè"
-  },
-  'Alessandra': { 
-    api: 'Kore', 
-    region: 'Naples', 
-    characteristics: "Highly musical and solar. Final vowels often become neutral schwas; 's' is pronounced like 'sh' before consonants.",
-    phrases: "Marò!, uè guagliò, jamme, azz!"
-  },
-  'Luca': { 
-    api: 'Fenrir', 
-    region: 'Standard/Florence', 
-    characteristics: "Refined, precise, and academic. Features the 'Gorgia Toscana' (aspirated 'c' sounds like 'h').",
-    phrases: "la hoha hola (accent), punto"
-  }
-};
-
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<AppView>(AppView.CHAT);
   const [tabs, setTabs] = useState<ChatTab[]>(() => {
     const saved = localStorage.getItem('italiano_tabs');
-    return saved ? JSON.parse(saved) : [{ id: '1', title: 'Welcome!', messages: [], archived: false }];
+    return saved ? JSON.parse(saved) : [{ id: '1', title: 'Sessione Iniziale', messages: [], archived: false }];
   });
-  const [activeTabId, setActiveTabId] = useState(() => {
-    const activeOnes = tabs.filter(t => !t.archived);
-    return activeOnes.length > 0 ? activeOnes[0].id : tabs[0].id;
-  });
+  const [activeTabId, setActiveTabId] = useState(() => tabs.find(t => !t.archived)?.id || tabs[0].id);
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('italiano_profile');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (!parsed.behaviorType) parsed.behaviorType = AIBehaviorType.FRIENDLY;
-      if (parsed.accentIntensity === undefined) parsed.accentIntensity = 50;
-      return parsed;
-    }
-    return INITIAL_PROFILE;
+    return saved ? JSON.parse(saved) : INITIAL_PROFILE;
   });
   const [memories, setMemories] = useState<MemoryItem[]>(() => {
     const saved = localStorage.getItem('italiano_memories');
     return saved ? JSON.parse(saved) : [];
   });
-  const [studyPlan, setStudyPlan] = useState<StudyPlanData | null>(() => {
-    const saved = localStorage.getItem('italiano_studyplan');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [studyPlan, setStudyPlan] = useState<StudyPlanData | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [useThinking, setUseThinking] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -121,37 +78,19 @@ const App: React.FC = () => {
     localStorage.setItem('italiano_tabs', JSON.stringify(tabs));
     localStorage.setItem('italiano_profile', JSON.stringify(profile));
     localStorage.setItem('italiano_memories', JSON.stringify(memories));
-    if (studyPlan) localStorage.setItem('italiano_studyplan', JSON.stringify(studyPlan));
-  }, [tabs, profile, memories, studyPlan]);
+  }, [tabs, profile, memories]);
 
-  const activeTab = tabs.find(t => t.id === activeTabId) || tabs.filter(t => !t.archived)[0] || tabs[0];
+  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
   const activeTabs = tabs.filter(t => !t.archived);
   const archivedTabs = tabs.filter(t => t.archived);
 
   const handleSendMessage = async (text: string) => {
-    const newUserMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: text,
-      timestamp: Date.now()
-    };
-
-    const updatedTabs = tabs.map(tab => 
-      tab.id === activeTabId 
-        ? { ...tab, messages: [...tab.messages, newUserMessage] }
-        : tab
-    );
-    setTabs(updatedTabs);
+    const newUserMessage: Message = { id: Date.now().toString(), role: 'user', content: text, timestamp: Date.now() };
+    setTabs(prev => prev.map(tab => tab.id === activeTabId ? { ...tab, messages: [...tab.messages, newUserMessage] } : tab));
     setIsTyping(true);
-
     try {
-      const history = activeTab.messages.map(m => ({
-        role: m.role === 'ai' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
-
+      const history = activeTab.messages.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.content }] }));
       const rawAiResponse = await gemini.chat(text, history, profile, memories, activeTabId, tabs, useThinking);
-      
       let cleanResponse = rawAiResponse;
       const memoryMatch = rawAiResponse.match(/\[\[MEMORY: (.*?)=(.*?)(?:\|context=(.*?))?\]\]/);
       if (memoryMatch) {
@@ -159,267 +98,90 @@ const App: React.FC = () => {
         const value = memoryMatch[2].trim();
         const context = memoryMatch[3] ? memoryMatch[3].trim() : "Stored during conversation.";
         cleanResponse = rawAiResponse.replace(memoryMatch[0], '').trim();
-        
         setMemories(prev => {
            const existing = prev.findIndex(m => m.key.toLowerCase() === key.toLowerCase());
            if (existing !== -1) {
-             const updated = [...prev];
-             updated[existing] = { ...updated[existing], value, context };
+             const updated = [...prev]; updated[existing] = { ...updated[existing], value, context };
              return updated;
            }
            return [...prev, { key, value, importance: 1, context }];
         });
       }
-
-      const newAiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'ai',
-        content: cleanResponse,
-        timestamp: Date.now()
-      };
-
-      setTabs(prev => prev.map(tab => 
-        tab.id === activeTabId 
-          ? { ...tab, messages: [...tab.messages, newAiMessage] }
-          : tab
-      ));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const updateStudyPlan = async () => {
-    setIsTyping(true);
-    try {
-      const plan = await gemini.generateStudyPlan(profile, memories);
-      setStudyPlan(plan);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsTyping(false);
-    }
+      const newAiMessage: Message = { id: (Date.now() + 1).toString(), role: 'ai', content: cleanResponse, timestamp: Date.now() };
+      setTabs(prev => prev.map(tab => tab.id === activeTabId ? { ...tab, messages: [...tab.messages, newAiMessage] } : tab));
+    } catch (err) { console.error(err); } finally { setIsTyping(false); }
   };
 
   const createNewTab = () => {
-    const newTab: ChatTab = {
-      id: Date.now().toString(),
-      title: `Session ${tabs.length + 1}`,
-      messages: [],
-      archived: false
-    };
-    setTabs([...tabs, newTab]);
-    setActiveTabId(newTab.id);
-    setIsSidebarOpen(false);
-    setActiveView(AppView.CHAT);
-  };
-
-  const deleteTab = (id: string) => {
-    const filtered = tabs.filter(t => t.id !== id);
-    if (filtered.length === 0) {
-      const resetTab = { id: Date.now().toString(), title: 'New Session', messages: [], archived: false };
-      setTabs([resetTab]);
-      setActiveTabId(resetTab.id);
-    } else {
-      setTabs(filtered);
-      if (activeTabId === id) {
-        const nextActive = filtered.find(t => !t.archived) || filtered[0];
-        setActiveTabId(nextActive.id);
-      }
-    }
-  };
-
-  const archiveTab = (id: string) => {
-    const updated = tabs.map(t => t.id === id ? { ...t, archived: true } : t);
-    setTabs(updated);
-    if (activeTabId === id) {
-      const nextActive = updated.find(t => !t.archived);
-      if (nextActive) setActiveTabId(nextActive.id);
-      else createNewTab();
-    }
-  };
-
-  const unarchiveTab = (id: string) => {
-    const updated = tabs.map(t => t.id === id ? { ...t, archived: false } : t);
-    setTabs(updated);
-  };
-
-  const toggleMode = (mode: AIMode) => {
-    setProfile(p => ({ ...p, mode }));
+    const newTab = { id: Date.now().toString(), title: `Conversazione ${tabs.length + 1}`, messages: [], archived: false };
+    setTabs([...tabs, newTab]); setActiveTabId(newTab.id); setIsSidebarOpen(false); setActiveView(AppView.CHAT);
   };
 
   return (
-    <div className="flex h-screen bg-[#050505] text-white overflow-hidden relative">
-      <div className="absolute top-0 left-0 w-full h-[3px] z-50 italian-accent"></div>
+    <div className="flex h-screen bg-[#050505] text-white overflow-hidden relative font-inter">
+      <div className="absolute top-0 left-0 w-full h-[3px] z-50 italian-accent opacity-60"></div>
 
-      <div className={`
-        fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden
-        ${isSidebarOpen ? 'block' : 'hidden'}
-      `} onClick={() => setIsSidebarOpen(false)}></div>
-
-      <div className={`
-        fixed inset-y-0 left-0 z-50 lg:z-30 bg-[#0d0d0d] flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        ${isSidebarCollapsed ? 'lg:w-20' : 'lg:w-72'}
-        w-72
-      `}>
-        <div className="flex flex-col h-full p-4 overflow-hidden">
-          <div className="flex items-center justify-between mb-8 px-2 shrink-0">
-            {!isSidebarCollapsed && (
-              <h1 className="text-xl font-montserrat tracking-tight flex items-center gap-2 truncate">
-                <span className="text-green-500">L'Italiano</span> Pro
-              </h1>
-            )}
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-                className="hidden lg:flex p-2 hover:bg-white/10 rounded-xl text-gray-400 bg-white/5 border border-white/5 shadow-sm"
-              >
-                {isSidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
-              </button>
-              <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2"><X /></button>
-            </div>
+      {/* Dynamic Navigation Drawer */}
+      <div className={`fixed inset-y-0 left-0 z-[60] lg:z-30 bg-[#0d0d0d] border-r border-white/5 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${isSidebarCollapsed ? 'lg:w-24' : 'lg:w-72'} w-72`}>
+        <div className="flex flex-col h-full p-6">
+          <div className="flex items-center justify-between mb-10">
+            {!isSidebarCollapsed && <h1 className="text-xl font-montserrat tracking-tight"><span className="text-green-500">L'Italiano</span> Pro</h1>}
+            <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="hidden lg:block p-2 text-gray-500 hover:bg-white/5 rounded-xl transition-all">
+              {isSidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+            </button>
+            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2"><X /></button>
           </div>
 
-          <button 
-            onClick={createNewTab}
-            className={`
-              flex items-center gap-2 bg-white/5 hover:bg-white/10 transition-colors p-3 rounded-xl border border-white/10 mb-6 text-sm font-medium shrink-0
-              ${isSidebarCollapsed ? 'justify-center' : ''}
-            `}
-          >
-            <Plus size={18} /> 
-            {!isSidebarCollapsed && <span className="truncate">New Conversation</span>}
+          <button onClick={createNewTab} className={`flex items-center gap-3 bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/10 mb-8 transition-all group ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+            <Plus size={20} className="text-green-500 group-hover:rotate-90 transition-transform" /> 
+            {!isSidebarCollapsed && <span className="text-sm font-bold uppercase tracking-widest">Nuova Chat</span>}
           </button>
 
-          <div className="flex-1 overflow-y-auto no-scrollbar space-y-2">
-            {!isSidebarCollapsed && <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold px-2 mb-2">Conversations</p>}
+          <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
             {activeTabs.map(tab => (
-              <div 
-                key={tab.id}
-                onClick={() => { setActiveTabId(tab.id); setActiveView(AppView.CHAT); setIsSidebarOpen(false); }}
-                className={`
-                  group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all
-                  ${activeTabId === tab.id && activeView === AppView.CHAT ? 'bg-white/10 border border-white/10 shadow-lg' : 'hover:bg-white/5'}
-                  ${isSidebarCollapsed ? 'justify-center' : ''}
-                `}
-                title={tab.title}
-              >
-                <div className={`flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? '' : 'flex-1'}`}>
-                  <MessageSquare size={16} className={activeTabId === tab.id && activeView === AppView.CHAT ? 'text-green-500' : 'text-gray-500'} />
+              <div key={tab.id} onClick={() => { setActiveTabId(tab.id); setActiveView(AppView.CHAT); setIsSidebarOpen(false); }}
+                className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all ${activeTabId === tab.id && activeView === AppView.CHAT ? 'bg-white/10 border-white/10 shadow-lg' : 'hover:bg-white/5'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <MessageSquare size={18} className={activeTabId === tab.id ? 'text-green-500' : 'text-gray-500'} />
                   {!isSidebarCollapsed && <span className="truncate text-sm font-medium">{tab.title}</span>}
                 </div>
-                {!isSidebarCollapsed && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); archiveTab(tab.id); }}
-                      className="p-1 hover:text-blue-400 transition-all"
-                      title="Archive"
-                    >
-                      <Archive size={14} />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteTab(tab.id); }}
-                      className="p-1 hover:text-red-500 transition-all"
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
           </div>
 
-          <div className="mt-auto pt-4 border-t border-white/5 space-y-2 shrink-0">
-             <div 
-              onClick={() => { setActiveView(AppView.SETTINGS); setIsSidebarOpen(false); }}
-              className={`flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors ${activeView === AppView.SETTINGS ? 'bg-white/10 border border-white/10' : ''} ${isSidebarCollapsed ? 'justify-center' : ''}`}
-             >
-                <UserIcon size={18} className="text-gray-400" />
-                {!isSidebarCollapsed && (
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium truncate">{profile.name}</span>
-                    <span className="text-[10px] text-gray-500 truncate">{memories.length} facts remembered</span>
-                  </div>
-                )}
-             </div>
+          <div className="mt-auto pt-6 border-t border-white/5">
+            <div onClick={() => { setActiveView(AppView.SETTINGS); setIsSidebarOpen(false); }} className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all hover:bg-white/5 ${activeView === AppView.SETTINGS ? 'bg-white/10 border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.03)]' : ''}`}>
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <UserIcon size={20} />
+              </div>
+              {!isSidebarCollapsed && <div className="flex flex-col"><span className="text-sm font-bold">{profile.name}</span><span className="text-[10px] uppercase font-black tracking-widest text-gray-500">Profilo Pro</span></div>}
+            </div>
           </div>
         </div>
       </div>
 
-      <main className={`flex-1 flex flex-col relative overflow-hidden bg-[#050505] transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
-        <div className="lg:hidden flex items-center justify-between p-4 bg-[#0a0a0a] border-b border-white/5 shrink-0">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-1"><LayoutGrid size={24} /></button>
-          <span className="font-montserrat text-sm tracking-widest">L'ITALIANO PRO</span>
-          <button onClick={() => setActiveView(AppView.SETTINGS)} className="p-1"><UserIcon size={24} /></button>
+      <main className={`flex-1 flex flex-col relative bg-[#050505] transition-all duration-500 ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-72'}`}>
+        {/* Mobile Status Bar */}
+        <div className="lg:hidden flex items-center justify-between p-4 bg-[#0a0a0a] border-b border-white/5 z-40">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-white/5 rounded-xl"><LayoutGrid size={22} /></button>
+          <span className="font-montserrat text-xs tracking-[0.3em] font-black uppercase">L'Italiano Pro</span>
+          <button onClick={() => setActiveView(AppView.SETTINGS)} className="p-2 bg-white/5 rounded-xl"><UserIcon size={22} /></button>
         </div>
 
         <div className="flex-1 relative overflow-hidden">
-          {activeView === AppView.CHAT && (
-            <ChatRoom 
-              messages={activeTab.messages} 
-              onSendMessage={handleSendMessage}
-              isTyping={isTyping}
-              profile={profile}
-              onThinkingToggle={setUseThinking}
-              useThinking={useThinking}
-              onModeToggle={toggleMode}
-            />
-          )}
-          {activeView === AppView.VOICE && (
-            <VoiceMode 
-              onClose={() => setActiveView(AppView.CHAT)} 
-              profile={profile} 
-              onModeToggle={toggleMode}
-              onUpdateProfile={(p) => setProfile(p)}
-            />
-          )}
-          {activeView === AppView.SCAN && (
-            <Scanner profile={profile} />
-          )}
-          {activeView === AppView.STUDY_PLAN && (
-            <StudyPlan profile={profile} studyPlan={studyPlan} onRefresh={updateStudyPlan} onUpdateProfile={setProfile} />
-          )}
-          {activeView === AppView.SETTINGS && (
-            <SettingsPanel 
-              profile={profile} 
-              memories={memories} 
-              onUpdate={setProfile} 
-              onUpdateMemories={setMemories}
-              archivedTabs={archivedTabs}
-              onUnarchive={unarchiveTab}
-              onDelete={deleteTab}
-            />
-          )}
+          {activeView === AppView.CHAT && <ChatRoom messages={activeTab.messages} onSendMessage={handleSendMessage} isTyping={isTyping} profile={profile} onThinkingToggle={setUseThinking} useThinking={useThinking} onModeToggle={(mode) => setProfile({...profile, mode})} />}
+          {activeView === AppView.VOICE && <VoiceMode onClose={() => setActiveView(AppView.CHAT)} profile={profile} onModeToggle={(mode) => setProfile({...profile, mode})} onUpdateProfile={setProfile} />}
+          {activeView === AppView.SCAN && <Scanner profile={profile} />}
+          {activeView === AppView.STUDY_PLAN && <StudyPlan profile={profile} studyPlan={studyPlan} onRefresh={async () => { const p = await gemini.generateStudyPlan(profile, memories); setStudyPlan(p); }} onUpdateProfile={setProfile} />}
+          {activeView === AppView.SETTINGS && <SettingsPanel profile={profile} memories={memories} onUpdate={setProfile} onUpdateMemories={setMemories} archivedTabs={archivedTabs} onUnarchive={(id) => setTabs(t => t.map(x => x.id === id ? {...x, archived: false} : x))} onDelete={(id) => setTabs(t => t.filter(x => x.id !== id))} />}
         </div>
 
-        <nav className="flex items-center justify-around py-3 bg-[#0d0d0d] border-t border-white/5 shrink-0 z-10">
-          <NavButton 
-            active={activeView === AppView.CHAT} 
-            onClick={() => setActiveView(AppView.CHAT)}
-            icon={<MessageSquare size={22} />}
-            label="Chat"
-          />
-          <NavButton 
-            active={activeView === AppView.VOICE} 
-            onClick={() => setActiveView(AppView.VOICE)}
-            icon={<Mic size={22} />}
-            label="Voice"
-          />
-          <NavButton 
-            active={activeView === AppView.SCAN} 
-            onClick={() => setActiveView(AppView.SCAN)}
-            icon={<Scan size={22} />}
-            label="Scan"
-          />
-          <NavButton 
-            active={activeView === AppView.STUDY_PLAN} 
-            onClick={() => setActiveView(AppView.STUDY_PLAN)}
-            icon={<BookOpen size={22} />}
-            label="Learn"
-          />
+        {/* Dynamic Tab Bar */}
+        <nav className="flex items-center justify-around py-4 bg-[#0d0d0d] border-t border-white/5 shrink-0 z-50 safe-area-inset-bottom">
+          <NavButton active={activeView === AppView.CHAT} onClick={() => setActiveView(AppView.CHAT)} icon={<MessageSquare size={24} />} label="Chat" />
+          <NavButton active={activeView === AppView.VOICE} onClick={() => setActiveView(AppView.VOICE)} icon={<Mic size={24} />} label="Voice" />
+          <NavButton active={activeView === AppView.SCAN} onClick={() => setActiveView(AppView.SCAN)} icon={<Scan size={24} />} label="Scan" />
+          <NavButton active={activeView === AppView.STUDY_PLAN} onClick={() => setActiveView(AppView.STUDY_PLAN)} icon={<BookOpen size={24} />} label="Learn" />
         </nav>
       </main>
     </div>
@@ -427,286 +189,220 @@ const App: React.FC = () => {
 };
 
 const NavButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
-  <button 
-    onClick={onClick}
-    className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-green-500 scale-110' : 'text-gray-500 hover:text-white'}`}
-  >
+  <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all relative ${active ? 'text-green-500 scale-110' : 'text-gray-500 hover:text-white'}`}>
+    {active && <span className="absolute -top-1 w-1 h-1 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></span>}
     {icon}
-    <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
+    <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
   </button>
 );
 
-interface SettingsPanelProps {
-  profile: UserProfile;
-  memories: MemoryItem[];
-  onUpdate: (p: UserProfile) => void;
-  onUpdateMemories: (m: MemoryItem[]) => void;
-  archivedTabs: ChatTab[];
-  onUnarchive: (id: string) => void;
-  onDelete: (id: string) => void;
-}
+const SettingsPanel = ({ profile, memories, onUpdate, onUpdateMemories, archivedTabs, onUnarchive, onDelete }: any) => {
+  const slangItems = memories.filter((m: any) => 
+    m.key.toLowerCase().includes('slang') || 
+    m.key.toLowerCase().includes('idiom') || 
+    m.key.toLowerCase().includes('regional')
+  );
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
-  profile, 
-  memories, 
-  onUpdate, 
-  onUpdateMemories,
-  archivedTabs,
-  onUnarchive,
-  onDelete
-}) => {
-  const [newMemKey, setNewMemKey] = useState('');
-  const [newMemVal, setNewMemVal] = useState('');
-  const [previewing, setPreviewing] = useState<string | null>(null);
-  const [selectedMemoryIndex, setSelectedMemoryIndex] = useState<number | null>(null);
-
-  const addMemory = () => {
-    if (newMemKey && newMemVal) {
-      onUpdateMemories([...memories, { key: newMemKey, value: newMemVal, importance: 1, context: "Added manually by user." }]);
-      setNewMemKey('');
-      setNewMemVal('');
-    }
-  };
-
-  const removeMemory = (idx: number) => {
-    onUpdateMemories(memories.filter((_, i) => i !== idx));
-    if (selectedMemoryIndex === idx) setSelectedMemoryIndex(null);
-  };
-
-  const previewVoice = async (apiVoiceName: string) => {
-    setPreviewing(apiVoiceName);
-    try {
-      const base64Audio = await gemini.generateSpeech("Ciao! Come va? Io sono la tua voce per imparare l'italiano.", apiVoiceName);
-      if (base64Audio) {
-        await gemini.playRawPCM(base64Audio);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setPreviewing(null);
-    }
-  };
-
-  const behaviorPresets = [
-    { type: AIBehaviorType.FRIENDLY, label: 'Friendly Tutor', desc: 'Patient and helpful.' },
-    { type: AIBehaviorType.STRICT, label: 'Strict Teacher', desc: 'Focus on perfect grammar.' },
-    { type: AIBehaviorType.CASUAL, label: 'Conversation Partner', desc: 'Slang and casual chat.' },
-    { type: AIBehaviorType.CUSTOM, label: 'Custom Persona', desc: 'Define your own AI.' }
-  ];
+  const personalMemories = memories.filter((m: any) => !slangItems.includes(m));
 
   return (
-    <div className="max-w-xl mx-auto p-8 space-y-8 h-full overflow-y-auto no-scrollbar pb-32 relative">
-      <h2 className="text-3xl font-montserrat flex items-center gap-3">
-        <Settings2 className="text-green-500" /> Settings
-      </h2>
-
-      {selectedMemoryIndex !== null && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#1a1a1a] w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
-             <button onClick={() => setSelectedMemoryIndex(null)} className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white transition-colors">
-               <X size={20} />
-             </button>
-             <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-2xl bg-blue-600/20 text-blue-400">
-                  <Brain size={24} />
-                </div>
-                <div>
-                   <h4 className="text-sm uppercase font-bold text-gray-500 tracking-widest">Memory Insights</h4>
-                   <p className="text-white font-bold">{memories[selectedMemoryIndex].key}</p>
-                </div>
-             </div>
-             <div className="space-y-4">
-                <div>
-                   <p className="text-[10px] uppercase font-bold text-blue-500 mb-1">Why is this important?</p>
-                   <p className="text-sm text-gray-300 leading-relaxed italic border-l-2 border-blue-500/30 pl-3">
-                     "{memories[selectedMemoryIndex].context || 'Information relevant to your learning journey.'}"
-                   </p>
-                </div>
-                <button 
-                  onClick={() => setSelectedMemoryIndex(null)}
-                  className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95 mt-2"
-                >
-                  Got it!
-                </button>
-             </div>
+    <div className="max-w-xl mx-auto p-6 pt-10 space-y-10 h-full overflow-y-auto no-scrollbar pb-32 view-enter">
+      {/* Premium Header */}
+      <div className="flex flex-col items-center text-center gap-4 mb-12">
+        <div className="relative group">
+          <div className="w-28 h-28 rounded-[2.5rem] bg-gradient-to-tr from-green-600 via-white/20 to-blue-600 p-1 shadow-[0_0_40px_rgba(34,197,94,0.2)]">
+            <div className="w-full h-full rounded-[2.3rem] bg-[#0d0d0d] flex items-center justify-center relative overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50"></div>
+               <span className="text-4xl font-montserrat font-black text-white relative z-10">{profile.name.charAt(0).toUpperCase()}</span>
+            </div>
+          </div>
+          <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2.5 rounded-2xl border-4 border-[#050505] shadow-xl">
+            <Crown size={18} />
           </div>
         </div>
+        <div className="mt-2">
+          <h2 className="text-3xl font-montserrat tracking-tight text-white mb-1">{profile.name}</h2>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-[10px] bg-green-500/10 text-green-400 px-3 py-1 rounded-full font-black tracking-widest border border-green-500/20 uppercase">PRO MEMBER</span>
+            <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full font-black tracking-widest border border-indigo-500/20 uppercase">MASTER LEARNER</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Editable Profile Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-500 mb-2 pl-2">
+          <UserCircle size={16} className="text-green-500" /> Identità
+        </div>
+        <div className="grid gap-4 p-6 bg-white/5 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+            <UserCircle size={120} />
+          </div>
+          
+          <div className="space-y-2 relative z-10">
+            <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest pl-2">Il Tuo Nome</label>
+            <div className="relative group">
+              <input 
+                type="text" 
+                value={profile.name} 
+                onChange={(e) => onUpdate({ ...profile, name: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-12 outline-none focus:border-green-500 focus:bg-white/10 transition-all text-[15px] text-white"
+                placeholder="Inserisci il tuo nome"
+              />
+              <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-green-500 transition-colors" size={18} />
+            </div>
+          </div>
+
+          <div className="space-y-2 relative z-10">
+            <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest pl-2">Occupazione</label>
+            <div className="relative group">
+              <input 
+                type="text" 
+                value={profile.occupation} 
+                onChange={(e) => onUpdate({ ...profile, occupation: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-12 outline-none focus:border-blue-500 focus:bg-white/10 transition-all text-[15px] text-white"
+                placeholder="Cosa fai?"
+              />
+              <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-blue-500 transition-colors" size={18} />
+            </div>
+          </div>
+
+          <div className="space-y-2 relative z-10">
+            <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest pl-2">Il Tuo Obiettivo</label>
+            <div className="relative group">
+              <input 
+                type="text" 
+                value={profile.goal || ''} 
+                onChange={(e) => onUpdate({ ...profile, goal: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-12 outline-none focus:border-amber-500 focus:bg-white/10 transition-all text-[15px] text-white"
+                placeholder="Perché impari l'italiano?"
+              />
+              <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-amber-500 transition-colors" size={18} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Slang Vault Section */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between mb-2 pl-2">
+          <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-500">
+            <Zap size={16} className="text-amber-500" /> Slang Vault
+          </div>
+          <span className="text-[10px] bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full font-black border border-amber-500/20">{slangItems.length} ESPRESSIONI</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {slangItems.map((mem: any, i: number) => (
+            <div key={i} className="p-5 bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 rounded-[2rem] group relative hover:border-amber-500/30 transition-all flex items-center justify-between">
+              <div className="flex flex-col gap-1 min-w-0 pr-4">
+                <span className="text-[9px] font-black text-amber-500/50 uppercase tracking-tighter truncate">{mem.key}</span>
+                <span className="text-[16px] font-black text-white leading-tight italic">"{mem.value}"</span>
+              </div>
+              <button 
+                onClick={() => onUpdateMemories(memories.filter((m: any) => m !== mem))} 
+                className="p-2 text-gray-700 hover:text-red-500 transition-colors bg-white/5 rounded-xl opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+          {slangItems.length === 0 && (
+            <div className="col-span-full p-12 bg-white/2 rounded-[2.5rem] border border-dashed border-white/5 flex flex-col items-center text-center">
+              <Sparkles size={32} className="text-gray-800 mb-4" />
+              <p className="text-xs text-gray-600 font-bold uppercase tracking-widest max-w-[200px]">Nessun segreto regionale ancora scoperto.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Voice/Audio Settings */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-500 mb-2 pl-2">
+          <Volume2 size={16} className="text-blue-400" /> Preferenze Audio
+        </div>
+        <div className="p-8 bg-white/5 rounded-[2.5rem] border border-white/5 shadow-2xl space-y-8">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-white">Intensità Flessione</p>
+                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Dialetto vs Standard</p>
+              </div>
+              <span className="text-2xl font-black text-blue-500">{profile.accentIntensity}%</span>
+            </div>
+            <input 
+              type="range" 
+              min="0" max="100" 
+              value={profile.accentIntensity} 
+              onChange={(e) => onUpdate({ ...profile, accentIntensity: parseInt(e.target.value) })} 
+              className="w-full accent-blue-500 bg-white/10 h-2.5 rounded-full cursor-pointer" 
+            />
+            <div className="flex justify-between text-[9px] text-gray-600 font-black uppercase tracking-widest px-1">
+              <span>Standard (Accademico)</span>
+              <span>Marcato (Popolare)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Personal Memory Section */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between mb-2 pl-2">
+          <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-500">
+            <Brain size={16} className="text-purple-400" /> Memoria Cognitiva
+          </div>
+          <span className="text-[10px] bg-purple-500/10 text-purple-400 px-3 py-1 rounded-full font-black border border-purple-500/20">{personalMemories.length} DATI</span>
+        </div>
+        <div className="grid gap-3">
+          {personalMemories.map((mem: any, i: number) => (
+            <div key={i} className="p-5 bg-white/5 rounded-[2.2rem] border border-white/5 flex items-center justify-between group hover:border-purple-500/30 hover:bg-white/8 transition-all">
+              <div className="flex items-center gap-5 min-w-0">
+                <div className="w-12 h-12 rounded-[1.2rem] bg-purple-500/10 flex items-center justify-center text-purple-400 shrink-0 shadow-inner">
+                  <Info size={20} />
+                </div>
+                <div className="flex flex-col min-w-0 pr-4">
+                  <span className="text-[10px] font-black uppercase text-gray-500 tracking-tighter mb-0.5 truncate">{mem.key}</span>
+                  <span className="text-[15px] font-medium text-gray-200 leading-tight">{mem.value}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => onUpdateMemories(memories.filter((m: any) => m !== mem))} 
+                className="p-3 text-gray-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all bg-white/5 rounded-2xl"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))}
+          {personalMemories.length === 0 && (
+            <div className="p-16 text-center bg-white/2 rounded-[2.5rem] border border-dashed border-white/5">
+               <Brain size={40} className="text-gray-800 mx-auto mb-4" />
+               <p className="text-xs text-gray-600 font-bold uppercase tracking-widest">La tua IA non ha ancora memorizzato dettagli personali.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* History section snippet */}
+      {archivedTabs.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-gray-500 mb-2 pl-2">
+            <Archive size={16} className="text-gray-600" /> Archivio Sessioni
+          </div>
+          <div className="grid gap-3">
+            {archivedTabs.map((tab: any) => (
+              <div key={tab.id} className="p-5 bg-white/2 rounded-2xl flex items-center justify-between border border-white/5 group hover:bg-white/5 transition-all">
+                <div className="flex items-center gap-3">
+                   <History size={18} className="text-gray-600" />
+                   <span className="text-sm text-gray-400 font-bold">{tab.title}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => onUnarchive(tab.id)} className="p-2.5 bg-white/5 rounded-xl text-blue-500 hover:bg-blue-500/10 transition-colors"><ArchiveRestore size={18} /></button>
+                  <button onClick={() => onDelete(tab.id)} className="p-2.5 bg-white/5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={18} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
-      
-      <section className="space-y-6">
-        <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
-          <UserIcon size={20} className="text-green-500" /> User Profile
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm text-gray-400 font-medium">Name</label>
-            <input 
-              type="text" 
-              value={profile.name}
-              onChange={(e) => onUpdate({ ...profile, name: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:border-green-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-gray-400 font-medium">Occupation</label>
-            <input 
-              type="text" 
-              value={profile.occupation}
-              onChange={(e) => onUpdate({ ...profile, occupation: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-3 outline-none focus:border-green-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Added Accent Intensity Slider to Settings Panel */}
-      <section className="space-y-6">
-        <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
-          <Languages size={20} className="text-blue-500" /> Accent Configuration
-        </h3>
-        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-white mb-1">Accent Intensity</p>
-              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Italian inflection in English</p>
-            </div>
-            <span className="text-lg font-black text-blue-500 bg-blue-500/10 px-4 py-1.5 rounded-xl border border-blue-500/20">
-              {profile.accentIntensity}%
-            </span>
-          </div>
-          
-          <input 
-            type="range" min="0" max="100" 
-            value={profile.accentIntensity}
-            onChange={(e) => onUpdate({ ...profile, accentIntensity: parseInt(e.target.value) })}
-            className="w-full accent-blue-500 bg-white/10 h-2 rounded-full cursor-pointer"
-          />
-          
-          <div className="flex justify-between items-start gap-4">
-            <div className="flex-1">
-              <p className="text-[9px] font-black text-gray-600 uppercase mb-1">0% - Standard</p>
-              <p className="text-[10px] text-gray-500 leading-tight">Clear English pronunciation for translations.</p>
-            </div>
-            <div className="flex-1 text-right">
-              <p className="text-[9px] font-black text-gray-600 uppercase mb-1">100% - Dialect-Heavy</p>
-              <p className="text-[10px] text-gray-500 leading-tight">Authentic regional phonetic inflections.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-6">
-        <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
-          <Mic size={20} className="text-green-500" /> Voices & Regional Accents
-        </h3>
-        <p className="text-xs text-gray-500 mb-4 px-1">Choose a native coach based on the region whose accent and idioms you want to learn.</p>
-        <div className="grid grid-cols-1 gap-6">
-          {Object.entries(VOICE_NAMES_MAPPING).map(([italianName, data]) => (
-            <div key={italianName} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => onUpdate({ ...profile, voiceId: data.api })}
-                  className={`flex-1 p-4 rounded-2xl border transition-all text-left flex justify-between items-center ${profile.voiceId === data.api ? 'bg-green-600/20 border-green-500 shadow-lg shadow-green-900/10' : 'bg-white/5 border-white/10 hover:border-white/30'}`}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black">{italianName}</span>
-                    <span className="text-[10px] text-gray-400 uppercase font-black flex items-center gap-1">
-                      <MapPin size={10} /> {data.region}
-                    </span>
-                  </div>
-                  {profile.voiceId === data.api && (
-                    <div className="bg-green-500 text-[9px] px-2 py-0.5 rounded-full font-black text-white uppercase">
-                      Native Selected
-                    </div>
-                  )}
-                </button>
-                <button 
-                  onClick={() => previewVoice(data.api)}
-                  disabled={previewing === data.api}
-                  className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors text-blue-400 disabled:opacity-50 border border-white/5"
-                >
-                  {previewing === data.api ? <Loader2 className="animate-spin" size={18} /> : <PlayCircle size={18} />}
-                </button>
-              </div>
-              <div className="px-1 py-1 flex items-start gap-2 bg-white/2 rounded-xl border border-white/5">
-                <div className="p-1.5 rounded-lg bg-white/5 text-gray-500 mt-0.5"><Info size={12} /></div>
-                <div className="flex-1 pb-1">
-                  <p className="text-[11px] text-gray-400 leading-tight">
-                    <span className="text-gray-300 font-bold uppercase text-[9px]">Traits:</span> {data.characteristics}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-6">
-        <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
-          <Cpu size={20} className="text-indigo-400" /> AI Personality
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          {behaviorPresets.map((preset) => (
-            <button 
-              key={preset.type}
-              onClick={() => onUpdate({ ...profile, behaviorType: preset.type })}
-              className={`
-                p-4 rounded-2xl border text-left transition-all
-                ${profile.behaviorType === preset.type 
-                  ? 'bg-indigo-600/20 border-indigo-500 shadow-lg shadow-indigo-600/10' 
-                  : 'bg-white/5 border-white/10 hover:border-white/30'}
-              `}
-            >
-              <div className="text-sm font-bold mb-1">{preset.label}</div>
-              <div className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">{preset.desc}</div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-6">
-        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <h3 className="text-lg font-bold flex items-center gap-2">
-            <Brain size={20} className="text-blue-500" /> Memory Bank
-          </h3>
-        </div>
-        <div className="space-y-3">
-          {memories.map((mem, i) => (
-            <div key={i} className="group relative flex items-center justify-between p-4 bg-[#1a1a1a] rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all shadow-lg">
-              <div className="flex items-start gap-3 min-w-0 pr-12">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider block">{mem.key}</span>
-                  <span className="text-sm text-gray-200 block truncate">{mem.value}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button onClick={() => setSelectedMemoryIndex(i)} className="p-2 text-gray-500 hover:text-blue-400"><Info size={16} /></button>
-                <button onClick={() => removeMemory(i)} className="p-2 text-gray-500 hover:text-red-500"><X size={16} /></button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-6">
-        <h3 className="text-lg font-bold flex items-center gap-2 border-b border-white/5 pb-2">
-          <Archive size={20} className="text-amber-500" /> Conversation Archive
-        </h3>
-        <div className="space-y-2">
-          {archivedTabs.map((tab) => (
-            <div key={tab.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
-              <div className="text-sm flex flex-col min-w-0">
-                <span className="font-bold text-gray-300 truncate">{tab.title}</span>
-                <span className="text-[10px] text-gray-500">{tab.messages.length} messages</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => onUnarchive(tab.id)} className="p-2 text-blue-400"><ArchiveRestore size={18} /></button>
-                <button onClick={() => onDelete(tab.id)} className="p-2 text-red-500"><Trash2 size={18} /></button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 };

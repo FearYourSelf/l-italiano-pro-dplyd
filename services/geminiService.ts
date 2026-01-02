@@ -2,13 +2,12 @@
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
 import { UserProfile, MemoryItem, AIMode, AIBehaviorType, ChatTab, StudyPlanData, StudyModule } from "../types";
 
-const API_KEY = process.env.API_KEY || "";
-
 export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: API_KEY });
+    // Correctly initialize GoogleGenAI with a named parameter using process.env.API_KEY directly
+    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   /**
@@ -123,6 +122,7 @@ export class GeminiService {
         config
       });
 
+      // Use .text property directly
       return response.text || "Ops, qualcosa è andato storto. Riprova?";
     });
   }
@@ -137,6 +137,7 @@ export class GeminiService {
           contents: [{ parts: [{ text: `Validate Italian. Return ONLY the correction or "OK" if perfect. Input: "${text}"` }] }],
         });
 
+        // Use .text property directly
         const result = response.text?.trim() || "";
         if (result.toUpperCase() === "OK" || result === text.trim()) return null;
         return result;
@@ -183,6 +184,7 @@ export class GeminiService {
         }
       });
 
+      // Use .text property directly
       const data = JSON.parse(response.text || "{}");
       return { ...data, lastUpdated: Date.now() };
     });
@@ -206,6 +208,7 @@ export class GeminiService {
           }
         }
       });
+      // Use .text property directly
       return JSON.parse(response.text || "{}");
     });
   }
@@ -240,6 +243,7 @@ export class GeminiService {
           ]
         }
       });
+      // Use .text property directly
       return response.text || "Non sono riuscito ad analizzare il file.";
     });
   }

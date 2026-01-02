@@ -11,6 +11,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --accent-primary: #008C45;
+      --accent-secondary: #CD212A;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background-color: #050505;
@@ -25,92 +29,82 @@
     .font-montserrat {
       font-family: 'Montserrat', sans-serif;
     }
-    /* Smooth Transitions */
+    /* Mobile App Fluidity */
     * {
       transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    /* Glassmorphism */
+    /* Glassmorphism 2.0 */
     .glass {
       background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-dark {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     /* Bubble animations */
     .bubble {
       width: auto;
-      max-width: 85%;
-      padding: 10px 16px;
-      border-radius: 20px;
-      margin-bottom: 2px;
+      max-width: 88%;
+      padding: 12px 18px;
+      border-radius: 24px;
+      margin-bottom: 4px;
       position: relative;
-      font-size: 0.95rem;
-      line-height: 1.45;
+      font-size: 0.98rem;
+      line-height: 1.5;
       word-wrap: break-word;
       display: inline-block;
       white-space: pre-wrap;
-      animation: bubble-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     .bubble-user-blue {
       background: linear-gradient(135deg, #007AFF, #0056b3);
       color: white;
       align-self: flex-end;
-      border-bottom-right-radius: 4px;
+      border-bottom-right-radius: 6px;
     }
     .bubble-user-green {
       background: linear-gradient(135deg, #34C759, #28a745);
       color: white;
       align-self: flex-end;
-      border-bottom-right-radius: 4px;
+      border-bottom-right-radius: 6px;
     }
     .bubble-ai {
       background: #1c1c1e;
       color: #f1f1f1;
       align-self: flex-start;
-      border-bottom-left-radius: 4px;
+      border-bottom-left-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.05);
     }
-    @keyframes bubble-in {
-      from { opacity: 0; transform: translateY(15px) scale(0.9); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    /* Typing dots */
-    .typing-dot {
-      width: 5px;
-      height: 5px;
-      background: #8e8e93;
-      border-radius: 50%;
-      display: inline-block;
-      animation: typing-blink 1.4s infinite ease-in-out;
-    }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typing-blink {
-      0%, 100% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.2); }
+    /* Haptic Feedback Emulation */
+    button:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    @keyframes border-glow {
-      0%, 100% { border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 0 5px rgba(255, 255, 255, 0.05); }
-      50% { border-color: var(--pulse-color, #008C45); box-shadow: 0 0 25px var(--pulse-color, #008C45); }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
     }
-    .animate-listening-border {
-      animation: border-glow 3s ease-in-out infinite;
+    .animate-pulse-glow {
+      animation: pulse-glow 4s ease-in-out infinite;
     }
     .italian-accent {
       background: linear-gradient(to right, #008C45 33.3%, #FFFFFF 33.3%, #FFFFFF 66.6%, #CD212A 66.6%);
     }
-    .message-meta {
-      font-size: 0.65rem;
-      color: rgba(255, 255, 255, 0.4);
-      margin: 2px 6px 8px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    /* Smooth view transitions */
+    .view-enter {
+      animation: view-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
-    .message-meta-ai { align-self: flex-start; }
-    .message-meta-user { align-self: flex-end; }
+    @keyframes view-fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 <script type="importmap">
 {
@@ -127,7 +121,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body>
+<body class="safe-area-inset">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

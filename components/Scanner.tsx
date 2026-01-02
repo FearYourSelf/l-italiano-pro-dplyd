@@ -1,5 +1,19 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Video, Upload, ArrowRight, Loader2, Languages, Info, Sparkles, X, RefreshCw, Zap, Search } from 'lucide-react';
+import { 
+  Camera, 
+  Upload, 
+  Loader2, 
+  Sparkles, 
+  X, 
+  Zap, 
+  ChevronLeft, 
+  Languages, 
+  Globe, 
+  History,
+  Maximize2,
+  ScanLine
+} from 'lucide-react';
 import { gemini } from '../services/geminiService';
 import { UserProfile } from '../types';
 
@@ -52,7 +66,6 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
         setCapturedImage(dataUrl);
         stopCamera();
         
-        // Convert to file for analysis
         fetch(dataUrl)
           .then(res => res.blob())
           .then(blob => {
@@ -78,17 +91,17 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
     setLoading(true);
     try {
       const prompt = `
-        Analyze this image/video frame for an Italian language learner. 
-        Provide a detailed response in ${profile.language} with these sections:
-        1. 🇮🇹 TRANSLATION: Translate any Italian text found.
-        2. 🏛️ CULTURAL CONTEXT: Explain the cultural significance of the scene, objects, or brands visible.
-        3. 🔍 IDENTIFICATION: Identify objects and give their Italian names with articles.
-        4. 💡 PHRASES: Suggest 3 useful Italian phrases related to what's in the image.
+        Analizza questo frame per uno studente di italiano. 
+        Risposta in ${profile.language} (Breve e concisa):
+        1. 🇮🇹 TRADUZIONE: Traduci eventuali testi italiani.
+        2. 🏛️ CULTURA: Significato culturale rapido.
+        3. 🔍 OGGETTI: Nomi italiani degli oggetti.
+        4. 💡 FRASI: 2 frasi utili.
       `;
       const res = await gemini.analyzeMedia(targetFile, prompt, profile);
       setResult(res);
     } catch (err) {
-      setResult('Oops! I couldn\'t analyze this. Please try again with a clearer image.');
+      setResult('Ops! Errore analisi. Riprova.');
     } finally {
       setLoading(false);
     }
@@ -106,111 +119,141 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col bg-[#050505] overflow-hidden">
-      {/* Scanner Viewport */}
-      <div className="flex-1 relative bg-black flex flex-col items-center justify-center group overflow-hidden">
+    <div className="h-full flex flex-col bg-[#050505] overflow-hidden relative font-inter">
+      {/* Dynamic Background Glow */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+      
+      {/* Top Bar - More compact */}
+      {!isLive && (
+        <div className="px-6 pt-8 pb-4 flex items-center justify-between shrink-0 relative z-50">
+          <div>
+            <h2 className="text-xl font-montserrat flex items-center gap-2">
+              <ScanLine className="text-green-500" size={20} /> Punta e Impara
+            </h2>
+            <p className="text-[9px] uppercase font-black tracking-widest text-gray-600 mt-0.5">Visione Pro</p>
+          </div>
+          <button className="p-2.5 bg-white/5 rounded-xl border border-white/5 text-gray-500 hover:text-white transition-colors">
+            <History size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 relative flex flex-col items-center justify-center overflow-hidden px-6 pb-4">
         {isLive ? (
-          <div className="relative w-full h-full flex flex-col">
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              className="w-full h-full object-cover"
-            />
-            {/* Viewfinder overlay */}
-            <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
-              <div className="w-full h-full border-2 border-white/20 rounded-3xl relative">
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
+          <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-300">
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            <div className="absolute inset-0 border-[20px] sm:border-[40px] border-black/60 pointer-events-none flex flex-col items-center justify-center">
+              <div className="w-full h-full border border-white/20 rounded-[2.5rem] relative flex items-center justify-center">
+                <div className="absolute top-0 left-0 w-10 h-10 border-t-[4px] border-l-[4px] border-green-500 rounded-tl-xl"></div>
+                <div className="absolute top-0 right-0 w-10 h-10 border-t-[4px] border-r-[4px] border-green-500 rounded-tr-xl"></div>
+                <div className="absolute bottom-0 left-0 w-10 h-10 border-b-[4px] border-l-[4px] border-green-500 rounded-bl-xl"></div>
+                <div className="absolute bottom-0 right-0 w-10 h-10 border-b-[4px] border-r-[4px] border-green-500 rounded-br-xl"></div>
               </div>
+            </div>
+            <div className="absolute bottom-10 left-0 right-0 flex items-center justify-center gap-8 z-[110]">
+              <button onClick={stopCamera} className="p-4 rounded-2xl bg-white/10 backdrop-blur-xl text-white border border-white/10"><X size={24} /></button>
+              <button onClick={capturePhoto} className="w-20 h-20 rounded-full border-[5px] border-white flex items-center justify-center p-1.5 bg-transparent group active:scale-90 transition-all">
+                <div className="w-full h-full rounded-full bg-white"></div>
+              </button>
+              <div className="w-12"></div>
             </div>
           </div>
         ) : capturedImage ? (
-          <div className="relative w-full h-full">
-            <img src={capturedImage} className="w-full h-full object-contain" />
+          <div className="w-full h-full max-w-lg bg-[#0d0d0d] rounded-[2.5rem] border border-white/10 overflow-hidden relative shadow-2xl animate-in fade-in duration-500">
+            <img src={capturedImage} className="w-full h-full object-cover" />
             {loading && (
-              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
-                 <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_15px_#22c55e] animate-scanner-line z-20"></div>
-                 <div className="p-6 bg-black/60 backdrop-blur-md rounded-3xl flex flex-col items-center gap-4 border border-white/10 animate-in zoom-in-95">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent shadow-[0_0_20px_#22c55e] animate-scanner-line z-30"></div>
+                 <div className="p-6 bg-black/40 backdrop-blur-xl rounded-[2rem] flex flex-col items-center gap-3 border border-white/10 shadow-2xl">
                     <Loader2 className="animate-spin text-green-500" size={32} />
-                    <span className="text-sm font-bold uppercase tracking-widest text-white">Analizzando...</span>
+                    <div className="text-center">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white">Analisi...</span>
+                    </div>
                  </div>
               </div>
             )}
+            <button onClick={reset} className="absolute top-4 left-4 p-2.5 rounded-xl bg-black/40 backdrop-blur-md text-white border border-white/10"><ChevronLeft size={20} /></button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-6 p-8 text-center animate-in fade-in zoom-in-95">
-            <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
-              <Search size={40} className="text-gray-500" />
-            </div>
-            <div>
-              <h3 className="text-xl font-montserrat mb-2">Punta e Impara</h3>
-              <p className="text-sm text-gray-400 max-w-xs">Usa la fotocamera per tradurre menù, insegne o scoprire il contesto culturale degli oggetti.</p>
-            </div>
-            <div className="flex flex-col gap-3 w-full max-w-[240px]">
-              <button 
-                onClick={startCamera}
-                className="w-full bg-white text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-200 transition-all active:scale-95"
-              >
-                <Camera size={18} /> Apri Camera
-              </button>
-              <label className="w-full bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer hover:bg-white/10 transition-all">
-                <Upload size={18} /> Carica File
-                <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* Floating result panel */}
-        {result && (
-          <div className="absolute bottom-4 left-4 right-4 z-30 max-h-[50%] overflow-y-auto no-scrollbar glass rounded-[2rem] border-white/10 p-6 shadow-2xl animate-in slide-in-from-bottom-5">
-            <div className="flex items-center justify-between mb-4 sticky top-0 bg-transparent">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-green-500" />
-                <span className="text-[10px] uppercase font-black tracking-widest text-green-500">Analysis Completed</span>
-              </div>
-              <button onClick={() => setResult('')} className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
-                <X size={16} className="text-gray-400" />
-              </button>
-            </div>
-            <div className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap prose prose-invert max-w-none">
-              {result}
-            </div>
-          </div>
-        )}
-
-        {/* Controls Overlay */}
-        {(isLive || capturedImage) && (
-          <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-6 z-40 px-6">
-            <button 
-              onClick={reset}
-              className="p-4 rounded-2xl bg-black/60 backdrop-blur-md text-white border border-white/10 hover:bg-black/80 transition-all shadow-xl active:scale-90"
+          <div className="w-full max-w-sm flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Optimized Scan Area */}
+            <div 
+              onClick={startCamera}
+              className="aspect-[4/5] w-full rounded-[3rem] bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-5 cursor-pointer hover:bg-white/10 transition-all group relative overflow-hidden shadow-2xl"
             >
-              <X size={24} />
-            </button>
-            
-            {isLive ? (
-              <button 
-                onClick={capturePhoto}
-                className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center p-1 bg-transparent group"
-              >
-                <div className="w-full h-full rounded-full bg-white scale-90 group-active:scale-100 transition-transform"></div>
-              </button>
-            ) : (
-              <button 
-                onClick={() => handleAnalyze(file!)}
-                disabled={loading}
-                className="px-8 py-4 rounded-2xl bg-green-600 text-white font-black uppercase tracking-widest text-sm flex items-center gap-2 shadow-2xl shadow-green-900/40 active:scale-95 disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
-                Riprova
-              </button>
-            )}
-            
-            <div className="w-14"></div> {/* Spacer for balance */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="w-20 h-20 rounded-[2rem] bg-green-500/10 flex items-center justify-center border border-green-500/20 group-hover:scale-105 transition-all">
+                <Camera size={36} className="text-green-500" />
+              </div>
+              <div className="text-center px-6 relative z-10">
+                <h3 className="text-lg font-montserrat mb-1">Avvia Scanner</h3>
+                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest leading-snug">
+                  Traduzioni e contesto<br/>in tempo reale
+                </p>
+              </div>
+              <div className="absolute bottom-8 w-24 h-1 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500/30 w-1/3 animate-ping-horizontal"></div>
+              </div>
+            </div>
+
+            {/* Feature Grid - More compact */}
+            <div className="grid grid-cols-2 gap-3">
+               <div className="p-4 rounded-[1.8rem] bg-white/5 border border-white/10 flex items-center justify-center gap-3">
+                  <Languages size={14} className="text-blue-400" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Traduzione</span>
+               </div>
+               <div className="p-4 rounded-[1.8rem] bg-white/5 border border-white/10 flex items-center justify-center gap-3">
+                  <Globe size={14} className="text-amber-400" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Cultura</span>
+               </div>
+            </div>
+
+            {/* Compact Upload */}
+            <label className="w-full flex items-center justify-center gap-2 py-4 rounded-[1.8rem] bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all group">
+              <Upload size={14} className="text-gray-500 group-hover:text-white" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 group-hover:text-white">Galleria</span>
+              <input type="file" className="hidden" onChange={handleFileChange} accept="image/*,video/*" />
+            </label>
+          </div>
+        )}
+
+        {/* Improved Results Dashboard */}
+        {result && (
+          <div className="absolute inset-x-0 bottom-0 z-50 p-4 pt-8 bg-gradient-to-t from-black via-black/98 to-transparent h-[60%] flex flex-col animate-in slide-in-from-bottom-full duration-400">
+            <div className="w-full max-w-lg mx-auto flex flex-col h-full gap-4">
+              <div className="flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-green-600 flex items-center justify-center text-white">
+                    <Zap size={16} />
+                  </div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-white">Intelligence Pro</h4>
+                </div>
+                <button onClick={() => setResult('')} className="p-2 bg-white/5 rounded-lg text-gray-500"><Maximize2 size={14} /></button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-6">
+                {result.split(/\d\.\s/).filter(Boolean).map((section, idx) => {
+                  const [title, ...content] = section.split(':');
+                  return (
+                    <div key={idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl">
+                      <div className="text-[8px] font-black text-green-500 uppercase tracking-widest mb-1.5 opacity-60">
+                        {title?.trim()}
+                      </div>
+                      <div className="text-xs text-gray-200 leading-relaxed font-medium">
+                        {content.join(':')?.trim()}
+                      </div>
+                    </div>
+                  );
+                })}
+                <button 
+                  onClick={reset}
+                  className="w-full py-3.5 rounded-xl bg-white text-black font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all mt-2"
+                >
+                  Nuova Scansione
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -219,12 +262,20 @@ const Scanner: React.FC<ScannerProps> = ({ profile }) => {
 
       <style>{`
         @keyframes scanner-line {
-          0% { transform: translateY(0); }
-          50% { transform: translateY(100vh); }
-          100% { transform: translateY(0); }
+          0% { transform: translateY(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(50vh); opacity: 0; }
         }
         .animate-scanner-line {
-          animation: scanner-line 4s linear infinite;
+          animation: scanner-line 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes ping-horizontal {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(250%); }
+        }
+        .animate-ping-horizontal {
+          animation: ping-horizontal 2s ease-in-out infinite;
         }
       `}</style>
     </div>

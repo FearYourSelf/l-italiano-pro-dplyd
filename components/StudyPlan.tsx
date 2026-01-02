@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Book, Trophy, CheckCircle2, Circle, ArrowRight, Loader2, RefreshCw, Target, BrainCircuit, History, X, Sparkles, Wand2, Volume2 } from 'lucide-react';
 import { UserProfile, StudyPlanData, StudyModule } from '../types';
@@ -78,7 +79,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
               <div className="flex items-center gap-3">
                 <History className="text-blue-400" size={24} />
                 <h3 className="font-montserrat text-lg">
-                  {showCompletedList ? 'Select a lesson' : 'Lesson Review'}
+                  {showCompletedList ? 'Seleziona una lezione' : 'Ripasso Lezione'}
                 </h3>
               </div>
               <button onClick={closeReview || (() => setShowCompletedList(false))} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -91,7 +92,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
               {showCompletedList ? (
                 <div className="space-y-3">
                   {completedModules.length === 0 ? (
-                    <p className="text-center text-gray-500 italic py-8">No lessons completed yet.</p>
+                    <p className="text-center text-gray-500 italic py-8">Nessuna lezione completata ancora.</p>
                   ) : (
                     completedModules.map(m => (
                       <button 
@@ -111,13 +112,13 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
               ) : isReviewLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <Loader2 className="animate-spin text-blue-500" size={40} />
-                  <p className="text-sm text-gray-400 font-medium">Gemini is preparing your review...</p>
+                  <p className="text-sm text-gray-400 font-medium">L'Italiano Pro sta preparando il tuo ripasso...</p>
                 </div>
               ) : reviewContent ? (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest">
-                      <Sparkles size={14} /> Summary
+                      <Sparkles size={14} /> Riassunto
                     </div>
                     <p className="text-gray-300 leading-relaxed italic border-l-2 border-blue-500/30 pl-4 bg-blue-500/5 py-3 rounded-r-xl">
                       {reviewContent.summary}
@@ -127,7 +128,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-widest">
-                        <Wand2 size={14} /> Quick Challenge
+                        <Wand2 size={14} /> Sfida Rapida
                       </div>
                       <button 
                         onClick={playQuizAudio}
@@ -149,7 +150,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
                          }}
                          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
                       >
-                        Answer in Chat
+                        Rispondi in Chat
                       </button>
                     </div>
                   </div>
@@ -166,14 +167,14 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
           <h2 className="text-3xl font-montserrat flex items-center gap-3">
             <GraduationCapIcon /> Study Plan
           </h2>
-          <p className="text-gray-400 mt-1">Personalized path for {profile.name}</p>
+          <p className="text-gray-400 mt-1">Piano personalizzato per {profile.name}</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setShowCompletedList(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600/20 transition-all font-bold text-xs"
           >
-            <History size={16} /> Review
+            <History size={16} /> Ripassa
           </button>
           <div className="bg-green-600/20 text-green-500 px-4 py-2 rounded-xl flex items-center gap-2 border border-green-500/20">
             <Trophy size={18} />
@@ -183,7 +184,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
             onClick={handleRefresh}
             disabled={isUpdating}
             className={`p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all ${isUpdating ? 'animate-spin opacity-50' : ''}`}
-            title="Update Plan with AI"
+            title="Aggiorna piano con l'AI"
           >
             <RefreshCw size={20} />
           </button>
@@ -194,21 +195,21 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
       <div className="bg-[#121212] p-6 rounded-2xl border border-white/5 mb-8 shadow-2xl">
         <div className="flex items-center gap-2 mb-4">
           <Target className="text-amber-500" size={20} />
-          <h3 className="font-bold text-sm uppercase tracking-widest text-gray-400">YOUR GOAL</h3>
+          <h3 className="font-bold text-sm uppercase tracking-widest text-gray-400">IL TUO OBIETTIVO</h3>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <input 
             type="text"
             value={goalInput}
             onChange={(e) => setGoalInput(e.target.value)}
-            placeholder="e.g. Reach B1 level by summer"
+            placeholder="Es: Raggiungere il livello B1 entro l'estate"
             className="flex-1 bg-white/2 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-amber-500 transition-all text-sm"
           />
           <button 
             onClick={handleGoalUpdate}
             className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-amber-900/20 active:scale-95"
           >
-            Save
+            Salva
           </button>
         </div>
       </div>
@@ -216,7 +217,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
       {isUpdating ? (
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 gap-4 animate-in fade-in duration-500">
           <Loader2 className="animate-spin text-green-500" size={48} />
-          <p className="font-montserrat text-lg">Gemini is analyzing your progress...</p>
+          <p className="font-montserrat text-lg text-center">L'Italiano Pro sta analizzando i tuoi progressi...</p>
         </div>
       ) : studyPlan ? (
         <div className="grid gap-4 animate-in slide-in-from-bottom-4 duration-500">
@@ -246,7 +247,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
                 </div>
                 {module.status === 'active' && (
                   <button className="bg-green-600 px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-500 transition-all shadow-lg shadow-green-900/20 active:scale-95 shrink-0">
-                    Continue <ArrowRight size={18} />
+                    Continua <ArrowRight size={18} />
                   </button>
                 )}
                 {module.status === 'completed' && (
@@ -254,7 +255,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
                     onClick={() => handleStartReview(module)}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-blue-400 shrink-0"
                   >
-                    <History size={14} /> Review
+                    <History size={14} /> Ripassa
                   </button>
                 )}
               </div>
@@ -280,12 +281,12 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
                 "{studyPlan.coachFeedback}"
               </p>
               <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Last updated: {new Date(studyPlan.lastUpdated).toLocaleDateString()}</span>
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Ultimo aggiornamento: {new Date(studyPlan.lastUpdated).toLocaleDateString()}</span>
                 <button 
                    onClick={() => window.location.hash = 'chat'}
                    className="text-green-500 font-bold text-xs flex items-center gap-1 hover:underline group"
                 >
-                  Discuss your progress <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  Discuti i tuoi progressi <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
@@ -296,13 +297,13 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ profile, studyPlan, onRefresh, on
           <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <Book size={32} className="text-green-500" />
           </div>
-          <h3 className="text-xl font-montserrat mb-2">Start your Journey</h3>
-          <p className="text-gray-400 max-w-sm mx-auto mb-8">You don't have a study plan yet. Set a goal above and click the refresh button to let Gemini create a roadmap for you.</p>
+          <h3 className="text-xl font-montserrat mb-2">Inizia il tuo Viaggio</h3>
+          <p className="text-gray-400 max-w-sm mx-auto mb-8">Non hai ancora un piano di studio. Imposta un obiettivo e clicca sul pulsante per lasciare che L'Italiano Pro crei una tabella di marcia per te.</p>
           <button 
             onClick={handleRefresh}
             className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-xl shadow-green-900/20 active:scale-95"
           >
-            Generate my AI Plan
+            Genera il mio Piano AI
           </button>
         </div>
       )}
