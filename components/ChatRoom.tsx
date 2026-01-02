@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Message, UserProfile, AIMode, Scenario, NoteItem } from '../types';
 import { gemini } from '../services/geminiService';
 import { 
@@ -13,7 +13,8 @@ import {
   PencilLine,
   Plus,
   Trash2,
-  Zap
+  Zap,
+  ArrowRightLeft
 } from 'lucide-react';
 
 interface ChatRoomProps {
@@ -54,15 +55,43 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
   messages, onSendMessage, isTyping, profile, onThinkingToggle, useThinking, onModeToggle, onUpdateProfile, notes, setNotes
 }) => {
   const [input, setInput] = useState('');
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [showScenarios, setShowScenarios] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isToolLoading, setIsToolLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<number | null>(null);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages, isTyping]);
 
-  const handleSend = () => { if (input.trim()) { onSendMessage(input); setInput(''); } };
+  // Debounced translation suggestion
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    
+    if (input.trim().length > 3) {
+      debounceRef.current = window.setTimeout(async () => {
+        setIsSuggesting(true);
+        const res = await gemini.getLiveSuggestion(input);
+        setSuggestion(res);
+        setIsSuggesting(false);
+      }, 500);
+    } else {
+      setSuggestion(null);
+    }
+
+    return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); };
+  }, [input]);
+
+  const handleSend = () => { if (input.trim()) { onSendMessage(input); setInput(''); setSuggestion(null); } };
+
+  const applySuggestion = () => {
+    if (suggestion) {
+      setInput(suggestion);
+      setSuggestion(null);
+    }
+  };
 
   const selectScenario = (s: Scenario | null) => {
     onUpdateProfile({ ...profile, activeScenario: s });
@@ -222,7 +251,29 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-[#0d0d0d] border-t border-white/5 z-40">
+      <div className="p-4 bg-[#0d0d0d] border-t border-white/5 z-40 relative">
+        {/* Real-time Italian Suggestion Pill */}
+        {(suggestion || isSuggesting) && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto">
+            <button 
+              onClick={applySuggestion}
+              disabled={isSuggesting}
+              className={`flex items-center gap-3 px-5 py-3 rounded-[2rem] border backdrop-blur-3xl shadow-2xl group transition-all active:scale-95 ${isSuggesting ? 'bg-white/5 border-white/5' : 'bg-green-600/20 border-green-500/30 hover:border-green-500 hover:bg-green-600/30'}`}
+            >
+              <div className={`shrink-0 flex items-center justify-center transition-all ${isSuggesting ? 'animate-spin' : 'group-hover:rotate-12'}`}>
+                {isSuggesting ? <Loader2 size={16} className="text-gray-400" /> : <Sparkles size={16} className="text-green-500" />}
+              </div>
+              <div className="text-left">
+                <p className="text-[8px] font-black uppercase tracking-widest text-green-500/60 leading-none mb-1">In Italiano</p>
+                <p className={`text-sm font-bold truncate max-w-[200px] ${isSuggesting ? 'text-gray-600 italic' : 'text-white'}`}>
+                  {isSuggesting ? 'Analizzando...' : suggestion}
+                </p>
+              </div>
+              {!isSuggesting && <ArrowRightLeft size={14} className="text-white/20" />}
+            </button>
+          </div>
+        )}
+
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <div className="flex gap-2">
             <button 

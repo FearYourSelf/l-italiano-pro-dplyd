@@ -116,6 +116,20 @@ export class GeminiService {
     } catch (e) { return ""; }
   }
 
+  async getLiveSuggestion(text: string): Promise<string | null> {
+    if (!text || text.trim().length < 4) return null;
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [{ parts: [{ text: `You are a real-time translator for an Italian learning app. If the following text is in English, translate it to natural, conversational Italian. If it is already in Italian, return nothing. Only return the translation, no extra text. Input: "${text}"` }] }],
+      });
+      const suggestion = response.text?.trim() || "";
+      // If the suggestion is identical to the input or empty, return null
+      if (suggestion === text || !suggestion || suggestion.length < 2) return null;
+      return suggestion;
+    } catch (e) { return null; }
+  }
+
   async quickCheck(text: string): Promise<string | null> {
     if (!text || text.trim().length < 5) return null;
     return this.withRetry(async () => {
